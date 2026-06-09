@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { Project } from "@/lib/api"
 
 interface ProjectCardProps {
-  project: Project
   onEdit?: (project: Project) => void
+  project: Project
 }
 
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {

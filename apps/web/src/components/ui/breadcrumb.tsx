@@ -1,44 +1,50 @@
 import { Slot } from "@radix-ui/react-slot"
 import { ChevronRight, MoreHorizontal } from "lucide-react"
-import * as React from "react"
+import type * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Breadcrumb = React.forwardRef<
-  HTMLElement,
-  React.ComponentPropsWithoutRef<"nav"> & {
-    separator?: React.ComponentType<{ className?: string }>
-  }
->(({ ...props }, ref) => <nav aria-label="breadcrumb" ref={ref} {...props} />)
+const Breadcrumb = ({
+  ref,
+  ...props
+}: (React.ComponentPropsWithoutRef<"nav"> & {
+  separator?: React.ComponentType<{ className?: string }>
+}) & { ref?: React.Ref<HTMLElement> }) => <nav aria-label="breadcrumb" ref={ref} {...props} />
 Breadcrumb.displayName = "Breadcrumb"
 
-const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(
-  ({ className, ...props }, ref) => (
-    <ol
-      className={cn(
-        "flex flex-wrap items-center gap-1.5 break-words text-muted-foreground text-sm sm:gap-2.5",
-        className
-      )}
-      ref={ref}
-      {...props}
-    />
-  )
+const BreadcrumbList = ({
+  className,
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<"ol"> & { ref?: React.Ref<HTMLOListElement> }) => (
+  <ol
+    className={cn(
+      "flex flex-wrap items-center gap-1.5 break-words text-muted-foreground text-sm sm:gap-2.5",
+      className
+    )}
+    ref={ref}
+    {...props}
+  />
 )
 BreadcrumbList.displayName = "BreadcrumbList"
 
-const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref) => (
-    <li className={cn("inline-flex items-center gap-1.5", className)} ref={ref} {...props} />
-  )
+const BreadcrumbItem = ({
+  className,
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<"li"> & { ref?: React.Ref<HTMLLIElement> }) => (
+  <li className={cn("inline-flex items-center gap-1.5", className)} ref={ref} {...props} />
 )
 BreadcrumbItem.displayName = "BreadcrumbItem"
 
-const BreadcrumbLink = React.forwardRef<
-  HTMLAnchorElement,
-  React.ComponentPropsWithoutRef<"a"> & {
-    asChild?: boolean
-  }
->(({ asChild, className, ...props }, ref) => {
+const BreadcrumbLink = ({
+  asChild,
+  className,
+  ref,
+  ...props
+}: (React.ComponentPropsWithoutRef<"a"> & {
+  asChild?: boolean
+}) & { ref?: React.Ref<HTMLAnchorElement> }) => {
   const Comp = asChild ? Slot : "a"
 
   return (
@@ -48,21 +54,24 @@ const BreadcrumbLink = React.forwardRef<
       {...props}
     />
   )
-})
+}
 BreadcrumbLink.displayName = "BreadcrumbLink"
 
-const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<"span">>(
-  ({ className, ...props }, ref) => (
-    <span
-      aria-current="page"
-      aria-disabled="true"
-      className={cn("font-normal text-foreground", className)}
-      ref={ref}
-      role="link"
-      tabIndex={-1}
-      {...props}
-    />
-  )
+const BreadcrumbPage = ({
+  className,
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<"span"> & { ref?: React.Ref<HTMLSpanElement> }) => (
+  // biome-ignore lint/a11y/useSemanticElements: current-page indicator is intentionally a non-navigable span, not an anchor
+  <span
+    aria-current="page"
+    aria-disabled="true"
+    className={cn("font-normal text-foreground", className)}
+    ref={ref}
+    role="link"
+    tabIndex={-1}
+    {...props}
+  />
 )
 BreadcrumbPage.displayName = "BreadcrumbPage"
 
@@ -93,10 +102,10 @@ BreadcrumbEllipsis.displayName = "BreadcrumbEllipsis"
 
 export {
   Breadcrumb,
-  BreadcrumbList,
+  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
+  BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-  BreadcrumbEllipsis,
 }

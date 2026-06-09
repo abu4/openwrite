@@ -23,18 +23,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { api, type Project } from "@/lib/api"
 
 interface EditProjectForm {
-  title: string
   description: string
-  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   genre: string
   targetWordCount: string
+  title: string
+  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   visibility: "private" | "organization" | "public"
 }
 
 interface EditProjectDialogProps {
-  project: Project
-  open: boolean
   onOpenChange: (open: boolean) => void
+  open: boolean
+  project: Project
 }
 
 export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDialogProps) {

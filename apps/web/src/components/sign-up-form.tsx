@@ -76,14 +76,14 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
             navigate({
               to: "/dashboard",
             })
-          } catch (_error) {
+          } catch {
             // Still navigate, dashboard will handle the session check
             navigate({
               to: "/dashboard",
             })
           }
         }
-      } catch (_error) {
+      } catch {
         toast.error("Sign up failed")
       }
     },

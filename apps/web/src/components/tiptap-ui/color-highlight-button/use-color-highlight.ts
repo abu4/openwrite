@@ -72,6 +72,11 @@ export interface UseColorHighlightConfig {
    */
   editor?: Editor | null
   /**
+   * Whether the button should hide when the mark is not available.
+   * @default false
+   */
+  hideWhenUnavailable?: boolean
+  /**
    * The color to apply when toggling the highlight.
    */
   highlightColor?: string
@@ -79,11 +84,6 @@ export interface UseColorHighlightConfig {
    * Optional label to display alongside the icon.
    */
   label?: string
-  /**
-   * Whether the button should hide when the mark is not available.
-   * @default false
-   */
-  hideWhenUnavailable?: boolean
   /**
    * Called when the highlight is applied.
    */

@@ -23,14 +23,14 @@ import { useIsMobile } from "@/hooks/use-mobile"
 
 export interface ColorHighlightPopoverContentProps {
   /**
-   * The Tiptap editor instance.
-   */
-  editor?: Editor | null
-  /**
    * Optional colors to use in the highlight popover.
    * If not provided, defaults to a predefined set of colors.
    */
   colors?: HighlightColor[]
+  /**
+   * The Tiptap editor instance.
+   */
+  editor?: Editor | null
   /**
    * Function to close the popover.
    */
@@ -47,22 +47,25 @@ export interface ColorHighlightPopoverProps
   colors?: HighlightColor[]
 }
 
-export const ColorHighlightPopoverButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, children, ...props }, ref) => (
-    <Button
-      aria-label="Highlight text"
-      className={className}
-      data-appearance="default"
-      data-style="ghost"
-      ref={ref}
-      tabIndex={-1}
-      tooltip="Highlight"
-      type="button"
-      {...props}
-    >
-      {children ?? <HighlighterIcon className="tiptap-button-icon" />}
-    </Button>
-  )
+export const ColorHighlightPopoverButton = ({
+  className,
+  children,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => (
+  <Button
+    aria-label="Highlight text"
+    className={className}
+    data-appearance="default"
+    data-style="ghost"
+    ref={ref}
+    tabIndex={-1}
+    tooltip="Highlight"
+    type="button"
+    {...props}
+  >
+    {children ?? <HighlighterIcon className="tiptap-button-icon" />}
+  </Button>
 )
 
 ColorHighlightPopoverButton.displayName = "ColorHighlightPopoverButton"

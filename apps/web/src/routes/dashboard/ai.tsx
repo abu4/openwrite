@@ -40,31 +40,31 @@ import {
 import { aiProvidersApi, type ProviderId } from "@/lib/api/ai-providers"
 import { buildAuthURL, generatePKCEParams } from "@/lib/pkce"
 
-type AIProvider = {
+interface AIProvider {
+  description: string
+  enabled: boolean
   id: ProviderId
   name: string
-  description: string
   recommended?: boolean
-  enabled: boolean
   supportsPKCE?: boolean
 }
 
 interface ProviderFormProps {
-  selectedProvider: string
-  setSelectedProvider: (provider: string) => void
   apiKey: string
-  setApiKey: (key: string) => void
-  loading: boolean
-  oauthLoading: boolean
-  showManualApiKey: boolean
-  setShowManualApiKey: (show: boolean) => void
   availableProviders: AIProvider[]
-  preSelectedProviderId?: string | null
-  selectedProviderData: AIProvider | undefined
-  selectedProviderSupportsPKCE: boolean
-  handleSubmit: (e: React.FormEvent) => void
   handleOAuthLogin: () => void
   handleOllamaConnect?: (config: { apiUrl: string; connectionMethod: string }) => void
+  handleSubmit: (e: React.FormEvent) => void
+  loading: boolean
+  oauthLoading: boolean
+  preSelectedProviderId?: string | null
+  selectedProvider: string
+  selectedProviderData: AIProvider | undefined
+  selectedProviderSupportsPKCE: boolean
+  setApiKey: (key: string) => void
+  setSelectedProvider: (provider: string) => void
+  setShowManualApiKey: (show: boolean) => void
+  showManualApiKey: boolean
 }
 
 function AIProvidersPage() {
@@ -234,14 +234,13 @@ function AIProvidersPage() {
   ]
 
   // Performance optimization: Create Map for O(1) provider lookups
-  const providersMap = useMemo(() => {
-    return new Map(availableProviders.map((provider) => [provider.id, provider]))
-  }, [])
+  const providersMap = useMemo(
+    () => new Map(availableProviders.map((provider) => [provider.id, provider])),
+    [availableProviders.map]
+  )
 
   const getConnectedProvider = useCallback(
-    (providerId: string) => {
-      return providers?.find((p) => p.provider === providerId)
-    },
+    (providerId: string) => providers?.find((p) => p.provider === providerId),
     [providers]
   )
 
@@ -342,65 +341,63 @@ function AIProvidersPage() {
                     // Finally alphabetically
                     return a.name.localeCompare(b.name)
                   })
-                  .map((provider) => {
-                    return (
-                      <TableRow key={provider.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{provider.name}</span>
-                            {provider.recommended && (
-                              <Badge className="text-xs" variant="secondary">
-                                Recommended
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {provider.description}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="text-xs" variant="outline">
-                            Available
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                className="h-6 px-2 text-xs"
-                                onClick={() => setSelectedProviderId(provider.id)}
-                                variant="default"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Connect {provider.name}</DialogTitle>
-                                <DialogDescription>
-                                  Connect to {provider.name} to access their models
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="max-h-[calc(90vh-8rem)] overflow-y-auto pr-2">
-                                {selectedProviderId === provider.id && (
-                                  <AddProviderForm
-                                    availableProviders={[provider].filter((p) => p.enabled)}
-                                    onSuccess={() => {
-                                      setSelectedProviderId(null)
-                                      queryClient.invalidateQueries({
-                                        queryKey: ["ai-providers"],
-                                      })
-                                    }}
-                                    preSelectedProviderId={provider.id}
-                                  />
-                                )}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  .map((provider) => (
+                    <TableRow key={provider.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{provider.name}</span>
+                          {provider.recommended && (
+                            <Badge className="text-xs" variant="secondary">
+                              Recommended
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {provider.description}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="text-xs" variant="outline">
+                          Available
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              className="h-6 px-2 text-xs"
+                              onClick={() => setSelectedProviderId(provider.id)}
+                              variant="default"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Connect {provider.name}</DialogTitle>
+                              <DialogDescription>
+                                Connect to {provider.name} to access their models
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="max-h-[calc(90vh-8rem)] overflow-y-auto pr-2">
+                              {selectedProviderId === provider.id && (
+                                <AddProviderForm
+                                  availableProviders={[provider].filter((p) => p.enabled)}
+                                  onSuccess={() => {
+                                    setSelectedProviderId(null)
+                                    queryClient.invalidateQueries({
+                                      queryKey: ["ai-providers"],
+                                    })
+                                  }}
+                                  preSelectedProviderId={provider.id}
+                                />
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
@@ -528,9 +525,10 @@ function AddProviderForm({
   }, [preSelectedProviderId])
 
   // Performance optimization: Create Map for O(1) provider lookups
-  const providersMap = useMemo(() => {
-    return new Map(availableProviders.map((provider) => [provider.id, provider]))
-  }, [availableProviders])
+  const providersMap = useMemo(
+    () => new Map(availableProviders.map((provider) => [provider.id, provider])),
+    [availableProviders]
+  )
 
   const selectedProviderData = providersMap.get(selectedProvider as ProviderId)
   const selectedProviderSupportsPKCE = selectedProviderData?.supportsPKCE ?? false

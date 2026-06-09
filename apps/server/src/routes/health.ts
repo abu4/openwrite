@@ -34,12 +34,12 @@ const healthRoute = createRoute({
 })
 
 // Implement the health check route
-openApiApp.openapi(healthRoute, (c) => {
-  return c.json({
+openApiApp.openapi(healthRoute, (c) =>
+  c.json({
     status: "ok",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   })
-})
+)
 
 export { healthRoute }

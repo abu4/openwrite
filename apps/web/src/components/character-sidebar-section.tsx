@@ -17,10 +17,10 @@ import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { api, type Character } from "@/lib/api"
 
 interface CharacterSidebarSectionProps {
-  projectId: string
   isExpanded: boolean
-  onToggle: () => void
   onOpenCodexModal: (type: string, entry: string) => void
+  onToggle: () => void
+  projectId: string
 }
 
 export function CharacterSidebarSection({

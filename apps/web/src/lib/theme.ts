@@ -1,13 +1,13 @@
 import themes from "@/routes/dashboard/themes.json" with { type: "json" }
 
 export interface Theme {
-  id: string
-  name: string
-  description: string
   colors: {
     light: Record<string, string>
     dark: Record<string, string>
   }
+  description: string
+  id: string
+  name: string
 }
 
 export const availableThemes: Theme[] = themes

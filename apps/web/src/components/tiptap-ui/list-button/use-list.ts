@@ -31,10 +31,6 @@ export interface UseListConfig {
    */
   editor?: Editor | null
   /**
-   * The type of list to toggle.
-   */
-  type: ListType
-  /**
    * Whether the button should hide when list is not available.
    * @default false
    */
@@ -43,6 +39,10 @@ export interface UseListConfig {
    * Callback function called after a successful toggle.
    */
   onToggled?: () => void
+  /**
+   * The type of list to toggle.
+   */
+  type: ListType
 }
 
 export const listIcons = {

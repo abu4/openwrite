@@ -12,9 +12,7 @@ const typeToSingular: Record<string, string> = {
   plot: "plot thread",
 }
 
-const getSingularForm = (type: string): string => {
-  return typeToSingular[type] || type
-}
+const getSingularForm = (type: string): string => typeToSingular[type] || type
 
 export const Route = createFileRoute("/projects/$projectId/codex/$type")({
   component: CodexTypeInterface,

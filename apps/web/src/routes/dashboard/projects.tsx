@@ -38,11 +38,11 @@ export const Route = createFileRoute("/dashboard/projects")({
 })
 
 interface CreateProjectForm {
-  title: string
   description: string
-  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   genre: string
   targetWordCount: string
+  title: string
+  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   visibility: "private" | "organization" | "public"
 }
 

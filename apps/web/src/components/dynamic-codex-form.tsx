@@ -28,12 +28,12 @@ import { api, type Character, type Location, type LoreEntry, type PlotThread } f
 type FieldType = "text" | "textarea" | "select" | "number"
 
 interface CodexFormField {
-  name: string
   label: string
-  type: FieldType
-  required?: boolean
-  placeholder?: string
+  name: string
   options?: { value: string; label: string }[]
+  placeholder?: string
+  required?: boolean
+  type: FieldType
   validation?: z.ZodSchema<unknown>
 }
 
@@ -259,10 +259,10 @@ const getFormConfig = (entryType: "characters" | "locations" | "lore" | "plot") 
 
 interface DynamicCodexFormProps {
   entry: Character | Location | LoreEntry | PlotThread
-  projectId: string
   entryType: "characters" | "locations" | "lore" | "plot"
-  onSave: () => void
   onCancel: () => void
+  onSave: () => void
+  projectId: string
 }
 
 // Create default values from entry data

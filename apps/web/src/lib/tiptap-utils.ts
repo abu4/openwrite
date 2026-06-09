@@ -142,7 +142,7 @@ export function findNodeAtPosition(editor: Editor, position: number) {
       return null
     }
     return node
-  } catch (_error) {
+  } catch {
     return null
   }
 }
@@ -260,7 +260,6 @@ export const handleImageUpload = async (
       throw new Error("Upload cancelled")
     }
     // Intentionally await each timeout to create sequential delay for progress simulation
-    // biome-ignore lint/nursery/noAwaitInLoop: Sequential await is intentional for realistic upload progress simulation
     await new Promise((resolve) => setTimeout(resolve, 500))
     onProgress?.({ progress })
   }
@@ -311,7 +310,13 @@ export const convertFileToBase64 = (file: File, abortSignal?: AbortSignal): Prom
   })
 }
 
-type ProtocolOptions = {
+interface ProtocolOptions {
+  /**
+   * If enabled, it allows optional slashes after the protocol.
+   * @default false
+   * @example true
+   */
+  optionalSlashes?: boolean
   /**
    * The protocol scheme to be registered.
    * @default '''
@@ -319,13 +324,6 @@ type ProtocolOptions = {
    * @example 'git'
    */
   scheme: string
-
-  /**
-   * If enabled, it allows optional slashes after the protocol.
-   * @default false
-   * @example true
-   */
-  optionalSlashes?: boolean
 }
 
 type ProtocolConfig = Array<ProtocolOptions | string>

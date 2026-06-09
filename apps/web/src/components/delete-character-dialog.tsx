@@ -13,10 +13,10 @@ import {
 import { api, type Character } from "@/lib/api"
 
 interface DeleteCharacterDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  projectId: string
   character: Character
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  projectId: string
 }
 
 export function DeleteCharacterDialog({

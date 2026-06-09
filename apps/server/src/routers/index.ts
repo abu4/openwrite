@@ -7,26 +7,26 @@ import { aiProvidersRouter } from "./ai-providers"
 import graphRouter from "./graph"
 
 interface Env {
-  CORS_ORIGIN: string
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  CORS_ORIGIN: string
 }
 
 interface Variables {
-  user: {
-    id: string
-    email: string
-    name: string
-  }
-  session: {
-    id: string
-    userId: string
-  }
   activeOrganization: {
     id: string
     name: string
     slug: string
   } | null
+  session: {
+    id: string
+    userId: string
+  }
+  user: {
+    id: string
+    email: string
+    name: string
+  }
 }
 
 const router = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -129,6 +129,9 @@ router.get(
   requireAuth,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("id")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const activeOrganization = c.get("activeOrganization")
 
     if (!activeOrganization) {
@@ -204,7 +207,7 @@ router.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to create project" }, 500)
     }
   }
@@ -216,6 +219,9 @@ router.put(
   requireAuth,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("id")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const user = c.get("user")
     const activeOrganization = c.get("activeOrganization")
 
@@ -239,7 +245,7 @@ router.put(
         )
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to update project" }, 500)
     }
   }
@@ -251,6 +257,9 @@ router.delete(
   requireAuth,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("id")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const user = c.get("user")
     const activeOrganization = c.get("activeOrganization")
 
@@ -268,7 +277,7 @@ router.delete(
       )
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to delete project" }, 500)
     }
   }
@@ -281,6 +290,9 @@ router.get(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
 
     const characters = await db
       .select({
@@ -315,6 +327,9 @@ router.get(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const characterId = c.req.param("characterId")
+    if (!(projectId && characterId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     const characterData = await db
       .select()
@@ -343,6 +358,9 @@ router.post(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
 
     try {
       const body = await c.req.json()
@@ -369,7 +387,7 @@ router.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to create character" }, 500)
     }
   }
@@ -383,6 +401,9 @@ router.put(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const characterId = c.req.param("characterId")
+    if (!(projectId && characterId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     try {
       const { name, description, image, metadata } = await c.req.json()
@@ -411,7 +432,7 @@ router.put(
         .where(and(eq(character.id, characterId), eq(character.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to update character" }, 500)
     }
   }
@@ -425,6 +446,9 @@ router.delete(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const characterId = c.req.param("characterId")
+    if (!(projectId && characterId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     try {
       await db
@@ -432,7 +456,7 @@ router.delete(
         .where(and(eq(character.id, characterId), eq(character.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to delete character" }, 500)
     }
   }
@@ -445,6 +469,9 @@ router.get(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
 
     const locations = await db
       .select({
@@ -479,6 +506,9 @@ router.get(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const locationId = c.req.param("locationId")
+    if (!(projectId && locationId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     const locationData = await db
       .select()
@@ -507,6 +537,9 @@ router.post(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const body = await c.req.json()
 
     // Validate required fields
@@ -531,7 +564,7 @@ router.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to create location" }, 500)
     }
   }
@@ -545,6 +578,9 @@ router.put(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const locationId = c.req.param("locationId")
+    if (!(projectId && locationId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
     const body = await c.req.json()
 
     try {
@@ -561,7 +597,7 @@ router.put(
         .where(and(eq(location.id, locationId), eq(location.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to update location" }, 500)
     }
   }
@@ -575,6 +611,9 @@ router.delete(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const locationId = c.req.param("locationId")
+    if (!(projectId && locationId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     try {
       await db
@@ -582,7 +621,7 @@ router.delete(
         .where(and(eq(location.id, locationId), eq(location.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to delete location" }, 500)
     }
   }
@@ -595,6 +634,9 @@ router.get(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
 
     const loreEntries = await db
       .select({
@@ -628,6 +670,9 @@ router.get(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const loreId = c.req.param("loreId")
+    if (!(projectId && loreId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     const loreData = await db
       .select()
@@ -655,6 +700,9 @@ router.post(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const body = await c.req.json()
 
     // Validate required fields
@@ -678,7 +726,7 @@ router.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to create lore entry" }, 500)
     }
   }
@@ -692,6 +740,9 @@ router.put(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const loreId = c.req.param("loreId")
+    if (!(projectId && loreId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
     const body = await c.req.json()
 
     try {
@@ -707,7 +758,7 @@ router.put(
         .where(and(eq(lore.id, loreId), eq(lore.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to update lore entry" }, 500)
     }
   }
@@ -721,12 +772,15 @@ router.delete(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const loreId = c.req.param("loreId")
+    if (!(projectId && loreId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     try {
       await db.delete(lore).where(and(eq(lore.id, loreId), eq(lore.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to delete lore entry" }, 500)
     }
   }
@@ -739,6 +793,9 @@ router.get(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
 
     const plotPoints = await db
       .select({
@@ -774,6 +831,9 @@ router.get(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const plotPointId = c.req.param("plotPointId")
+    if (!(projectId && plotPointId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     const plotPointData = await db
       .select()
@@ -802,6 +862,9 @@ router.post(
   verifyProjectAccess,
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
+    if (!projectId) {
+      return c.json({ error: "Project ID is required" }, 400)
+    }
     const body = await c.req.json()
 
     // Validate required fields
@@ -852,7 +915,7 @@ router.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to create plot point" }, 500)
     }
   }
@@ -866,6 +929,9 @@ router.put(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const plotPointId = c.req.param("plotPointId")
+    if (!(projectId && plotPointId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
     const body = await c.req.json()
 
     try {
@@ -883,7 +949,7 @@ router.put(
         .where(and(eq(plotPoint.id, plotPointId), eq(plotPoint.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to update plot point" }, 500)
     }
   }
@@ -897,6 +963,9 @@ router.delete(
   async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
     const projectId = c.req.param("projectId")
     const plotPointId = c.req.param("plotPointId")
+    if (!(projectId && plotPointId)) {
+      return c.json({ error: "Missing required parameters" }, 400)
+    }
 
     try {
       await db
@@ -904,7 +973,7 @@ router.delete(
         .where(and(eq(plotPoint.id, plotPointId), eq(plotPoint.projectId, projectId)))
 
       return c.json({ success: true })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to delete plot point" }, 500)
     }
   }

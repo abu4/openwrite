@@ -48,9 +48,9 @@ export async function apiCall(endpoint: string, options: ApiRequestOptions = {})
  * Generic API client interface for CRUD operations
  */
 export interface ApiClient<T, CreateData = Partial<T>, UpdateData = Partial<T>> {
-  list: () => Promise<T[]>
-  get: (id: string) => Promise<T>
   create: (data: CreateData) => Promise<T | { success: boolean; id: string }>
-  update?: (id: string, data: UpdateData) => Promise<T | { success: boolean }>
   delete?: (id: string) => Promise<{ success: boolean }>
+  get: (id: string) => Promise<T>
+  list: () => Promise<T[]>
+  update?: (id: string, data: UpdateData) => Promise<T | { success: boolean }>
 }

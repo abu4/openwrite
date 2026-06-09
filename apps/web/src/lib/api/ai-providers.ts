@@ -19,59 +19,59 @@ export type ProviderId =
   | "cohere"
 
 export interface AiProvider {
+  createdAt: string
+  currentUsage: number
   id: string
-  provider: ProviderId
-  keyLabel: string | null
-  keyHash: string | null
   isActive: boolean
   isDefault: boolean
+  keyHash: string | null
+  keyLabel: string | null
+  lastUsedAt: string | null
+  provider: ProviderId
   usageLimit: number | null
   usageRemaining: number | null
-  currentUsage: number
-  createdAt: string
-  lastUsedAt: string | null
 }
 
 export interface AiProviderDetails extends AiProvider {
-  providerUserId: string | null
-  updatedAt: string
-  supportedModels: string[] | null
   providerConfig: Record<string, unknown> | null
+  providerUserId: string | null
+  supportedModels: string[] | null
+  updatedAt: string
 }
 
 export interface CreateAiProviderData {
-  provider: ProviderId
   apiKey?: string
   apiUrl?: string
   configuration?: Record<string, unknown>
-  keyLabel?: string
-  keyHash?: string
-  providerUserId?: string
   isDefault?: boolean
-  usageLimit?: number
-  supportedModels?: string[]
+  keyHash?: string
+  keyLabel?: string
+  provider: ProviderId
   providerConfig?: Record<string, unknown>
+  providerUserId?: string
+  supportedModels?: string[]
+  usageLimit?: number
 }
 
 export interface UpdateAiProviderData {
-  keyLabel?: string
   isActive?: boolean
   isDefault?: boolean
-  usageLimit?: number | null
-  supportedModels?: string[]
+  keyLabel?: string
   providerConfig?: Record<string, unknown>
+  supportedModels?: string[]
+  usageLimit?: number | null
 }
 
 export interface OpenRouterExchangeData {
   code: string
-  codeVerifier?: string
   codeChallengeMethod?: "S256" | "plain"
+  codeVerifier?: string
 }
 
 export interface OAuthExchangeData {
   code: string
-  codeVerifier: string
   codeChallengeMethod: "S256" | "plain"
+  codeVerifier: string
   provider: ProviderId
 }
 

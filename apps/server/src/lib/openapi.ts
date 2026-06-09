@@ -3,9 +3,9 @@ import { Scalar } from "@scalar/hono-api-reference"
 
 interface Env {
   ASSETS: Fetcher
-  CORS_ORIGIN: string
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  CORS_ORIGIN: string
 }
 
 // Create OpenAPI-enabled Hono app

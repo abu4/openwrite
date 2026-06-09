@@ -3,17 +3,17 @@ import { createAuthClient } from "better-auth/react"
 
 // Session data types
 export interface SessionUser {
-  id: string
   email: string
+  id: string
   name: string | null
 }
 
 export interface SessionData {
   authenticated: boolean
+  error?: string
   session?: {
     user: SessionUser
   } | null
-  error?: string
 }
 
 // Singleton pattern for Better Auth client

@@ -3,8 +3,8 @@ import { AutocompleteToggle } from "@/components/autocomplete-toggle"
 import { Separator } from "@/components/ui/separator"
 
 interface StatusBarProps {
-  wordCount: number
   lastSavedText?: string
+  wordCount: number
 }
 
 export function StatusBar({

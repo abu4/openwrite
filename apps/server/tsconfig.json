@@ -7,6 +7,8 @@
     "strict": true,
     "skipLibCheck": true,
     "baseUrl": "./",
+    // baseUrl is deprecated in TS 6.0 but still backs the "@/*" path mapping.
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"]
     },

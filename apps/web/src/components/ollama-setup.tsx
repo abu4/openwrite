@@ -18,14 +18,14 @@ import { Separator } from "@/components/ui/separator"
 type ConnectionMethod = "ngrok" | "cloudflare" | "manual"
 
 interface SetupStep {
-  title: string
   content: string
   copyable?: boolean
+  title: string
 }
 
 interface OllamaSetupProps {
-  onConnect: (config: { apiUrl: string; connectionMethod: ConnectionMethod }) => void
   loading?: boolean
+  onConnect: (config: { apiUrl: string; connectionMethod: ConnectionMethod }) => void
 }
 
 export function OllamaSetup({ onConnect, loading }: OllamaSetupProps) {
@@ -38,7 +38,7 @@ export function OllamaSetup({ onConnect, loading }: OllamaSetupProps) {
     try {
       await navigator.clipboard.writeText(text)
       toast.success("Copied to clipboard!")
-    } catch (_err) {
+    } catch {
       toast.error("Could not copy to clipboard.")
     }
   }
@@ -197,7 +197,7 @@ export function OllamaSetup({ onConnect, loading }: OllamaSetupProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {currentGuide.steps.map((step, index) => (
-              <div className="space-y-2" key={`${step.title}-${index}`}>
+              <div className="space-y-2" key={step.title}>
                 <div className="flex items-center gap-2">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground text-xs">
                     {index + 1}

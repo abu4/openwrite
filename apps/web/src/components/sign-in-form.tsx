@@ -98,13 +98,13 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
             } else {
               toast.error("Sign in successful but session not established. Please try again.")
             }
-          } catch (_error) {
+          } catch {
             toast.error("Sign in failed. Please try again.")
           }
         } else {
           toast.error("Sign in failed - invalid credentials")
         }
-      } catch (_error) {
+      } catch {
         toast.error("Sign in failed")
       }
     },

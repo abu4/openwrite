@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/dialog"
 
 interface ConfirmDialogProps {
-  title: string
-  description: string
-  confirmText?: string
   cancelText?: string
-  variant?: "default" | "destructive"
-  onConfirm: () => void
   children: React.ReactNode
+  confirmText?: string
+  description: string
   disabled?: boolean
+  onConfirm: () => void
+  title: string
+  variant?: "default" | "destructive"
 }
 
 export function ConfirmDialog({

@@ -13,14 +13,14 @@ import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 export interface HeadingButtonProps extends Omit<ButtonProps, "type">, UseHeadingConfig {
   /**
-   * Optional text to display alongside the icon.
-   */
-  text?: string
-  /**
    * Optional show shortcut keys in the button.
    * @default false
    */
   showShortcut?: boolean
+  /**
+   * Optional text to display alongside the icon.
+   */
+  text?: string
 }
 
 export function HeadingShortcutBadge({
@@ -38,69 +38,65 @@ export function HeadingShortcutBadge({
  *
  * For custom button implementations, use the `useHeading` hook instead.
  */
-export const HeadingButton = React.forwardRef<HTMLButtonElement, HeadingButtonProps>(
-  (
-    {
-      editor: providedEditor,
-      level,
-      text,
-      hideWhenUnavailable = false,
-      onToggled,
-      showShortcut = false,
-      onClick,
-      children,
-      ...buttonProps
+export const HeadingButton = ({
+  editor: providedEditor,
+  level,
+  text,
+  hideWhenUnavailable = false,
+  onToggled,
+  showShortcut = false,
+  onClick,
+  children,
+  ref,
+  ...buttonProps
+}: HeadingButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { editor } = useTiptapEditor(providedEditor)
+  const { isVisible, canToggle, isActive, handleToggle, label, Icon, shortcutKeys } = useHeading({
+    editor,
+    level,
+    hideWhenUnavailable,
+    onToggled,
+  })
+
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event)
+      if (event.defaultPrevented) {
+        return
+      }
+      handleToggle()
     },
-    ref
-  ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const { isVisible, canToggle, isActive, handleToggle, label, Icon, shortcutKeys } = useHeading({
-      editor,
-      level,
-      hideWhenUnavailable,
-      onToggled,
-    })
+    [handleToggle, onClick]
+  )
 
-    const handleClick = React.useCallback(
-      (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        handleToggle()
-      },
-      [handleToggle, onClick]
-    )
-
-    if (!isVisible) {
-      return null
-    }
-
-    return (
-      <Button
-        aria-label={label}
-        aria-pressed={isActive}
-        data-active-state={isActive ? "on" : "off"}
-        data-disabled={!canToggle}
-        data-style="ghost"
-        disabled={!canToggle}
-        onClick={handleClick}
-        tabIndex={-1}
-        tooltip={label}
-        type="button"
-        {...buttonProps}
-        ref={ref}
-      >
-        {children ?? (
-          <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
-            {showShortcut && <HeadingShortcutBadge level={level} shortcutKeys={shortcutKeys} />}
-          </>
-        )}
-      </Button>
-    )
+  if (!isVisible) {
+    return null
   }
-)
+
+  return (
+    <Button
+      aria-label={label}
+      aria-pressed={isActive}
+      data-active-state={isActive ? "on" : "off"}
+      data-disabled={!canToggle}
+      data-style="ghost"
+      disabled={!canToggle}
+      onClick={handleClick}
+      tabIndex={-1}
+      tooltip={label}
+      type="button"
+      {...buttonProps}
+      ref={ref}
+    >
+      {children ?? (
+        <>
+          <Icon className="tiptap-button-icon" />
+          {text && <span className="tiptap-button-text">{text}</span>}
+          {showShortcut && <HeadingShortcutBadge level={level} shortcutKeys={shortcutKeys} />}
+        </>
+      )}
+    </Button>
+  )
+}
 
 HeadingButton.displayName = "HeadingButton"

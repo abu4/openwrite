@@ -35,11 +35,11 @@ const characterSchema = z.object({
 type CharacterFormData = z.infer<typeof characterSchema>
 
 interface CharacterDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  projectId: string
   character?: Character | null
   mode: "create" | "edit"
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  projectId: string
 }
 
 export function CharacterDialog({

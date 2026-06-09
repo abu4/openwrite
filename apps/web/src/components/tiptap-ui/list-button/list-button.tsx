@@ -13,14 +13,14 @@ import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 export interface ListButtonProps extends Omit<ButtonProps, "type">, UseListConfig {
   /**
-   * Optional text to display alongside the icon.
-   */
-  text?: string
-  /**
    * Optional show shortcut keys in the button.
    * @default false
    */
   showShortcut?: boolean
+  /**
+   * Optional text to display alongside the icon.
+   */
+  text?: string
 }
 
 export function ListShortcutBadge({
@@ -38,69 +38,65 @@ export function ListShortcutBadge({
  *
  * For custom button implementations, use the `useList` hook instead.
  */
-export const ListButton = React.forwardRef<HTMLButtonElement, ListButtonProps>(
-  (
-    {
-      editor: providedEditor,
-      type,
-      text,
-      hideWhenUnavailable = false,
-      onToggled,
-      showShortcut = false,
-      onClick,
-      children,
-      ...buttonProps
+export const ListButton = ({
+  editor: providedEditor,
+  type,
+  text,
+  hideWhenUnavailable = false,
+  onToggled,
+  showShortcut = false,
+  onClick,
+  children,
+  ref,
+  ...buttonProps
+}: ListButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { editor } = useTiptapEditor(providedEditor)
+  const { isVisible, canToggle, isActive, handleToggle, label, shortcutKeys, Icon } = useList({
+    editor,
+    type,
+    hideWhenUnavailable,
+    onToggled,
+  })
+
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event)
+      if (event.defaultPrevented) {
+        return
+      }
+      handleToggle()
     },
-    ref
-  ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const { isVisible, canToggle, isActive, handleToggle, label, shortcutKeys, Icon } = useList({
-      editor,
-      type,
-      hideWhenUnavailable,
-      onToggled,
-    })
+    [handleToggle, onClick]
+  )
 
-    const handleClick = React.useCallback(
-      (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        handleToggle()
-      },
-      [handleToggle, onClick]
-    )
-
-    if (!isVisible) {
-      return null
-    }
-
-    return (
-      <Button
-        aria-label={label}
-        aria-pressed={isActive}
-        data-active-state={isActive ? "on" : "off"}
-        data-disabled={!canToggle}
-        data-style="ghost"
-        disabled={!canToggle}
-        onClick={handleClick}
-        tabIndex={-1}
-        tooltip={label}
-        type="button"
-        {...buttonProps}
-        ref={ref}
-      >
-        {children ?? (
-          <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
-            {showShortcut && <ListShortcutBadge shortcutKeys={shortcutKeys} type={type} />}
-          </>
-        )}
-      </Button>
-    )
+  if (!isVisible) {
+    return null
   }
-)
+
+  return (
+    <Button
+      aria-label={label}
+      aria-pressed={isActive}
+      data-active-state={isActive ? "on" : "off"}
+      data-disabled={!canToggle}
+      data-style="ghost"
+      disabled={!canToggle}
+      onClick={handleClick}
+      tabIndex={-1}
+      tooltip={label}
+      type="button"
+      {...buttonProps}
+      ref={ref}
+    >
+      {children ?? (
+        <>
+          <Icon className="tiptap-button-icon" />
+          {text && <span className="tiptap-button-text">{text}</span>}
+          {showShortcut && <ListShortcutBadge shortcutKeys={shortcutKeys} type={type} />}
+        </>
+      )}
+    </Button>
+  )
+}
 
 ListButton.displayName = "ListButton"

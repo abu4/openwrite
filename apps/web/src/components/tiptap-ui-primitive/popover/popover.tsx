@@ -33,4 +33,4 @@ function PopoverClose({ ...props }: React.ComponentProps<typeof PopoverPrimitive
   return <PopoverPrimitive.Close {...props} />
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverClose }
+export { Popover, PopoverClose, PopoverContent, PopoverTrigger }

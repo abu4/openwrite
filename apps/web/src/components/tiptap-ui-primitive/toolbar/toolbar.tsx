@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noReactForwardRef: components merge an internal ref with the forwarded ref and read ref.current
 import * as React from "react"
 import { Separator } from "@/components/tiptap-ui-primitive/separator"
 import "@/components/tiptap-ui-primitive/toolbar/toolbar.scss"
@@ -10,8 +11,9 @@ interface ToolbarProps extends BaseProps {
   variant?: "floating" | "fixed"
 }
 
-const mergeRefs = <T,>(refs: Array<React.Ref<T> | null | undefined>): React.RefCallback<T> => {
-  return (value) => {
+const mergeRefs =
+  <T,>(refs: Array<React.Ref<T> | null | undefined>): React.RefCallback<T> =>
+  (value) => {
     for (const ref of refs) {
       if (typeof ref === "function") {
         ref(value)
@@ -20,7 +22,6 @@ const mergeRefs = <T,>(refs: Array<React.Ref<T> | null | undefined>): React.RefC
       }
     }
   }
-}
 
 const useObserveVisibility = (
   ref: React.RefObject<HTMLElement | null>,

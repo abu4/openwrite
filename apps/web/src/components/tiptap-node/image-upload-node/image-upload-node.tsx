@@ -11,13 +11,18 @@ const FILE_EXTENSION_REGEX = /\.[^/.]+$/
 
 export interface FileItem {
   /**
-   * Unique identifier for the file item
+   * Controller that can be used to abort the upload process
+   * @optional
    */
-  id: string
+  abortController?: AbortController
   /**
    * The actual File object being uploaded
    */
   file: File
+  /**
+   * Unique identifier for the file item
+   */
+  id: string
   /**
    * Current upload progress as a percentage (0-100)
    */
@@ -33,27 +38,34 @@ export interface FileItem {
    * @optional
    */
   url?: string
-  /**
-   * Controller that can be used to abort the upload process
-   * @optional
-   */
-  abortController?: AbortController
 }
 
 export interface UploadOptions {
-  /**
-   * Maximum allowed file size in bytes
-   */
-  maxSize: number
-  /**
-   * Maximum number of files that can be uploaded
-   */
-  limit: number
   /**
    * String specifying acceptable file types (MIME types or extensions)
    * @example ".jpg,.png,image/jpeg" or "image/*"
    */
   accept: string
+  /**
+   * Maximum number of files that can be uploaded
+   */
+  limit: number
+  /**
+   * Maximum allowed file size in bytes
+   */
+  maxSize: number
+  /**
+   * Callback triggered when an error occurs during upload
+   * @param {Error} error - The error that occurred
+   * @optional
+   */
+  onError?: (error: Error) => void
+  /**
+   * Callback triggered when a file is uploaded successfully
+   * @param {string} url - URL of the successfully uploaded file
+   * @optional
+   */
+  onSuccess?: (url: string) => void
   /**
    * Function that handles the actual file upload process
    * @param {File} file - The file to be uploaded
@@ -66,18 +78,6 @@ export interface UploadOptions {
     onProgress: (event: { progress: number }) => void,
     signal: AbortSignal
   ) => Promise<string>
-  /**
-   * Callback triggered when a file is uploaded successfully
-   * @param {string} url - URL of the successfully uploaded file
-   * @optional
-   */
-  onSuccess?: (url: string) => void
-  /**
-   * Callback triggered when an error occurs during upload
-   * @param {Error} error - The error that occurred
-   * @optional
-   */
-  onError?: (error: Error) => void
 }
 
 /**
@@ -305,16 +305,16 @@ const FileCornerIcon: React.FC = () => (
 
 interface ImageUploadDragAreaProps {
   /**
-   * Callback function triggered when files are dropped or selected
-   * @param {File[]} files - Array of File objects that were dropped or selected
-   */
-  onFile: (files: File[]) => void
-  /**
    * Optional child elements to render inside the drag area
    * @optional
    * @default undefined
    */
   children?: React.ReactNode
+  /**
+   * Callback function triggered when files are dropped or selected
+   * @param {File[]} files - Array of File objects that were dropped or selected
+   */
+  onFile: (files: File[]) => void
 }
 
 /**
@@ -435,28 +435,26 @@ const ImageUploadPreview: React.FC<ImageUploadPreviewProps> = ({ fileItem, onRem
   )
 }
 
-const DropZoneContent: React.FC<{ maxSize: number; limit: number }> = ({ maxSize, limit }) => {
-  return (
-    <>
-      <div className="tiptap-image-upload-dropzone">
-        <FileIcon />
-        <FileCornerIcon />
-        <div className="tiptap-image-upload-icon-container">
-          <CloudUploadIcon />
-        </div>
+const DropZoneContent: React.FC<{ maxSize: number; limit: number }> = ({ maxSize, limit }) => (
+  <>
+    <div className="tiptap-image-upload-dropzone">
+      <FileIcon />
+      <FileCornerIcon />
+      <div className="tiptap-image-upload-icon-container">
+        <CloudUploadIcon />
       </div>
+    </div>
 
-      <div className="tiptap-image-upload-content">
-        <span className="tiptap-image-upload-text">
-          <em>Click to upload</em> or drag and drop
-        </span>
-        <span className="tiptap-image-upload-subtext">
-          Maximum {limit} file{limit === 1 ? "" : "s"}, {maxSize / 1024 / 1024}MB each.
-        </span>
-      </div>
-    </>
-  )
-}
+    <div className="tiptap-image-upload-content">
+      <span className="tiptap-image-upload-text">
+        <em>Click to upload</em> or drag and drop
+      </span>
+      <span className="tiptap-image-upload-subtext">
+        Maximum {limit} file{limit === 1 ? "" : "s"}, {maxSize / 1024 / 1024}MB each.
+      </span>
+    </div>
+  </>
+)
 
 export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const { accept, limit, maxSize } = props.node.attrs

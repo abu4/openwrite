@@ -18,13 +18,13 @@ export type TextAlign = "left" | "center" | "right" | "justify"
  */
 export interface UseTextAlignConfig {
   /**
-   * The Tiptap editor instance.
-   */
-  editor?: Editor | null
-  /**
    * The text alignment to apply.
    */
   align: TextAlign
+  /**
+   * The Tiptap editor instance.
+   */
+  editor?: Editor | null
   /**
    * Whether the button should hide when alignment is not available.
    * @default false

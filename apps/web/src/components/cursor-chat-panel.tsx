@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 interface Message {
-  id: string
   content: string
+  id: string
   role: "user" | "assistant"
   timestamp: Date
 }

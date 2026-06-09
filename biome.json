@@ -20,16 +20,17 @@
       },
       "performance": {
         "noNamespaceImport": "off",
+        "noBarrelFile": "off",
         "useTopLevelRegex": "warn"
       },
       "nursery": {
-        "noUnknownAtRule": "off",
         "noShadow": "warn"
       },
       "suspicious": {
         "noConsole": "warn",
         "noEmptyBlockStatements": "warn",
-        "noDocumentCookie": "warn"
+        "noDocumentCookie": "warn",
+        "noUnknownAtRules": "off"
       },
       "style": {
         "noNestedTernary": "warn"
@@ -76,6 +77,10 @@
       "enabled": true
     }
   },
-  "extends": ["ultracite"],
-  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json"
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/tanstack"
+  ],
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json"
 }

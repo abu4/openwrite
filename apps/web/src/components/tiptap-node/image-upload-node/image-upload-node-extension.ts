@@ -24,10 +24,6 @@ export interface ImageUploadNodeOptions {
    */
   maxSize?: number
   /**
-   * Function to handle the upload process.
-   */
-  upload?: UploadFunction
-  /**
    * Callback for upload errors.
    */
   onError?: (error: Error) => void
@@ -35,6 +31,10 @@ export interface ImageUploadNodeOptions {
    * Callback for successful uploads.
    */
   onSuccess?: (url: string) => void
+  /**
+   * Function to handle the upload process.
+   */
+  upload?: UploadFunction
 }
 
 declare module "@tiptap/react" {
@@ -99,12 +99,11 @@ export const ImageUploadNode = Node.create<ImageUploadNodeOptions>({
     return {
       setImageUploadNode:
         (options = {}) =>
-        ({ commands }) => {
-          return commands.insertContent({
+        ({ commands }) =>
+          commands.insertContent({
             type: this.name,
             attrs: options,
-          })
-        },
+          }),
     }
   },
 

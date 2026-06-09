@@ -8,8 +8,8 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 interface Message {
-  id: string
   content: string
+  id: string
   role: "user" | "assistant"
   timestamp: Date
 }

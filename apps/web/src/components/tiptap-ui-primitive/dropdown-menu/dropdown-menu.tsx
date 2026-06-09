@@ -1,5 +1,5 @@
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
-import * as React from "react"
+import type * as React from "react"
 import { cn } from "@/lib/tiptap-utils"
 import "@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss"
 
@@ -13,10 +13,12 @@ function DropdownMenuPortal({
   return <DropdownMenuPrimitive.Portal {...props} />
 }
 
-const DropdownMenuTrigger = React.forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
->(({ ...props }, ref) => <DropdownMenuPrimitive.Trigger ref={ref} {...props} />)
+const DropdownMenuTrigger = ({
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger> & {
+  ref?: React.RefObject<React.ComponentRef<typeof DropdownMenuPrimitive.Trigger> | null>
+}) => <DropdownMenuPrimitive.Trigger ref={ref} {...props} />
 DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
@@ -29,12 +31,16 @@ const DropdownMenuItem = DropdownMenuPrimitive.Item
 
 const DropdownMenuSubTrigger = DropdownMenuPrimitive.SubTrigger
 
-const DropdownMenuSubContent = React.forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
-    portal?: boolean | React.ComponentProps<typeof DropdownMenuPortal>
-  }
->(({ className, portal = true, ...props }, ref) => {
+const DropdownMenuSubContent = ({
+  className,
+  portal = true,
+  ref,
+  ...props
+}: (React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> & {
+  portal?: boolean | React.ComponentProps<typeof DropdownMenuPortal>
+}) & {
+  ref?: React.RefObject<React.ComponentRef<typeof DropdownMenuPrimitive.SubContent> | null>
+}) => {
   const content = (
     <DropdownMenuPrimitive.SubContent
       className={cn("tiptap-dropdown-menu", className)}
@@ -50,15 +56,20 @@ const DropdownMenuSubContent = React.forwardRef<
   ) : (
     content
   )
-})
+}
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName
 
-const DropdownMenuContent = React.forwardRef<
-  React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
-    portal?: boolean
-  }
->(({ className, sideOffset = 4, portal = false, ...props }, ref) => {
+const DropdownMenuContent = ({
+  className,
+  sideOffset = 4,
+  portal = false,
+  ref,
+  ...props
+}: (React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+  portal?: boolean
+}) & {
+  ref?: React.RefObject<React.ComponentRef<typeof DropdownMenuPrimitive.Content> | null>
+}) => {
   const content = (
     <DropdownMenuPrimitive.Content
       className={cn("tiptap-dropdown-menu", className)}
@@ -76,18 +87,18 @@ const DropdownMenuContent = React.forwardRef<
   ) : (
     content
   )
-})
+}
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 
 export {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuGroup,
-  DropdownMenuSub,
+  DropdownMenuItem,
   DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuRadioGroup,
+  DropdownMenuTrigger,
 }

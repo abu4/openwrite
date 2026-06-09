@@ -29,14 +29,14 @@ interface ProjectSidebarProps {
 }
 
 interface CollapsibleSectionProps {
-  sectionKey: string
   icon: React.ComponentType<{ className?: string }>
-  title: string
-  items: Array<{ id: string; name: string; role?: string; type?: string }>
   isExpanded: boolean
-  onToggle: () => void
+  items: Array<{ id: string; name: string; role?: string; type?: string }>
   onOpenModal: (type: string, entry?: string) => void
+  onToggle: () => void
   secondaryField: "role" | "type"
+  sectionKey: string
+  title: string
 }
 
 function CollapsibleSection({

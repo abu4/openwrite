@@ -25,21 +25,21 @@ export interface UseListDropdownMenuConfig {
    */
   editor?: Editor | null
   /**
-   * The list types to display in the dropdown.
-   * @default ["bulletList", "orderedList", "taskList"]
-   */
-  types?: ListType[]
-  /**
    * Whether the dropdown should be hidden when no list types are available
    * @default false
    */
   hideWhenUnavailable?: boolean
+  /**
+   * The list types to display in the dropdown.
+   * @default ["bulletList", "orderedList", "taskList"]
+   */
+  types?: ListType[]
 }
 
 export interface ListOption {
+  icon: React.ElementType
   label: string
   type: ListType
-  icon: React.ElementType
 }
 
 export const listOptions: ListOption[] = [

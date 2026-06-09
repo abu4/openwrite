@@ -13,14 +13,14 @@ import {
 } from "@/components/ui/dialog"
 
 interface AiProviderCardProps {
-  name: string
+  children?: React.ReactNode // For the AddProviderForm
   description: string
   enabled: boolean
-  recommended?: boolean
   isConnected: boolean
+  name: string
   onConnect: () => void
   onDelete?: () => void
-  children?: React.ReactNode // For the AddProviderForm
+  recommended?: boolean
 }
 
 export function AiProviderCard({
@@ -33,6 +33,24 @@ export function AiProviderCard({
   onDelete,
   children,
 }: AiProviderCardProps) {
+  const connectedAction = onDelete ? (
+    <ConfirmDialog
+      confirmText="Delete"
+      description="Are you sure you want to delete this AI provider? This action cannot be undone."
+      onConfirm={onDelete}
+      title="Delete AI Provider"
+      variant="destructive"
+    >
+      <Button size="sm" variant="destructive">
+        Delete
+      </Button>
+    </ConfirmDialog>
+  ) : (
+    <Button disabled size="sm" variant="destructive">
+      Delete
+    </Button>
+  )
+
   return (
     <Card className={`${enabled ? "" : "opacity-60"} transition-all duration-200 hover:shadow-md`}>
       <CardHeader className="p-4 sm:p-6">
@@ -61,23 +79,7 @@ export function AiProviderCard({
           </div>
           <div className="flex w-full justify-end sm:w-auto">
             {isConnected ? (
-              onDelete ? (
-                <ConfirmDialog
-                  confirmText="Delete"
-                  description="Are you sure you want to delete this AI provider? This action cannot be undone."
-                  onConfirm={onDelete}
-                  title="Delete AI Provider"
-                  variant="destructive"
-                >
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </ConfirmDialog>
-              ) : (
-                <Button disabled size="sm" variant="destructive">
-                  Delete
-                </Button>
-              )
+              connectedAction
             ) : (
               <Dialog>
                 <DialogTrigger asChild>

@@ -13,14 +13,14 @@ import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 export interface TextAlignButtonProps extends Omit<ButtonProps, "type">, UseTextAlignConfig {
   /**
-   * Optional text to display alongside the icon.
-   */
-  text?: string
-  /**
    * Optional show shortcut keys in the button.
    * @default false
    */
   showShortcut?: boolean
+  /**
+   * Optional text to display alongside the icon.
+   */
+  text?: string
 }
 
 export function TextAlignShortcutBadge({
@@ -38,70 +38,66 @@ export function TextAlignShortcutBadge({
  *
  * For custom button implementations, use the `useTextAlign` hook instead.
  */
-export const TextAlignButton = React.forwardRef<HTMLButtonElement, TextAlignButtonProps>(
-  (
-    {
-      editor: providedEditor,
+export const TextAlignButton = ({
+  editor: providedEditor,
+  align,
+  text,
+  hideWhenUnavailable = false,
+  onAligned,
+  showShortcut = false,
+  onClick,
+  children,
+  ref,
+  ...buttonProps
+}: TextAlignButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { editor } = useTiptapEditor(providedEditor)
+  const { isVisible, handleTextAlign, label, canAlign, isActive, Icon, shortcutKeys } =
+    useTextAlign({
+      editor,
       align,
-      text,
-      hideWhenUnavailable = false,
+      hideWhenUnavailable,
       onAligned,
-      showShortcut = false,
-      onClick,
-      children,
-      ...buttonProps
+    })
+
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event)
+      if (event.defaultPrevented) {
+        return
+      }
+      handleTextAlign()
     },
-    ref
-  ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const { isVisible, handleTextAlign, label, canAlign, isActive, Icon, shortcutKeys } =
-      useTextAlign({
-        editor,
-        align,
-        hideWhenUnavailable,
-        onAligned,
-      })
+    [handleTextAlign, onClick]
+  )
 
-    const handleClick = React.useCallback(
-      (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        handleTextAlign()
-      },
-      [handleTextAlign, onClick]
-    )
-
-    if (!isVisible) {
-      return null
-    }
-
-    return (
-      <Button
-        aria-label={label}
-        aria-pressed={isActive}
-        data-active-state={isActive ? "on" : "off"}
-        data-disabled={!canAlign}
-        data-style="ghost"
-        disabled={!canAlign}
-        onClick={handleClick}
-        tabIndex={-1}
-        tooltip={label}
-        type="button"
-        {...buttonProps}
-        ref={ref}
-      >
-        {children ?? (
-          <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
-            {showShortcut && <TextAlignShortcutBadge align={align} shortcutKeys={shortcutKeys} />}
-          </>
-        )}
-      </Button>
-    )
+  if (!isVisible) {
+    return null
   }
-)
+
+  return (
+    <Button
+      aria-label={label}
+      aria-pressed={isActive}
+      data-active-state={isActive ? "on" : "off"}
+      data-disabled={!canAlign}
+      data-style="ghost"
+      disabled={!canAlign}
+      onClick={handleClick}
+      tabIndex={-1}
+      tooltip={label}
+      type="button"
+      {...buttonProps}
+      ref={ref}
+    >
+      {children ?? (
+        <>
+          <Icon className="tiptap-button-icon" />
+          {text && <span className="tiptap-button-text">{text}</span>}
+          {showShortcut && <TextAlignShortcutBadge align={align} shortcutKeys={shortcutKeys} />}
+        </>
+      )}
+    </Button>
+  )
+}
 
 TextAlignButton.displayName = "TextAlignButton"

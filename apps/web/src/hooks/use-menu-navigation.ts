@@ -5,39 +5,39 @@ type Orientation = "horizontal" | "vertical" | "both"
 
 interface MenuNavigationOptions<T> {
   /**
-   * The Tiptap editor instance, if using with a Tiptap editor.
+   * Whether to automatically select the first item when the menu opens.
+   * @default true
    */
-  editor?: Editor | null
+  autoSelectFirstItem?: boolean
   /**
    * Reference to the container element for handling keyboard events.
    */
   containerRef?: React.RefObject<HTMLElement | null>
   /**
-   * Search query that affects the selected item.
+   * The Tiptap editor instance, if using with a Tiptap editor.
    */
-  query?: string
+  editor?: Editor | null
   /**
    * Array of items to navigate through.
    */
   items: T[]
   /**
-   * Callback fired when an item is selected.
-   */
-  onSelect?: (item: T) => void
-  /**
    * Callback fired when the menu should close.
    */
   onClose?: () => void
+  /**
+   * Callback fired when an item is selected.
+   */
+  onSelect?: (item: T) => void
   /**
    * The navigation orientation of the menu.
    * @default "vertical"
    */
   orientation?: Orientation
   /**
-   * Whether to automatically select the first item when the menu opens.
-   * @default true
+   * Search query that affects the selected item.
    */
-  autoSelectFirstItem?: boolean
+  query?: string
 }
 
 /**

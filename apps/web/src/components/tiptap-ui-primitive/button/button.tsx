@@ -11,11 +11,11 @@ import "@/components/tiptap-ui-primitive/button/button-group.scss"
 import "@/components/tiptap-ui-primitive/button/button.scss"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean
   className?: string
+  shortcutKeys?: string
   showTooltip?: boolean
   tooltip?: React.ReactNode
-  shortcutKeys?: string
-  asChild?: boolean
 }
 
 export const ShortcutDisplay: React.FC<{ shortcuts: string[] }> = ({ shortcuts }) => {
@@ -35,26 +35,37 @@ export const ShortcutDisplay: React.FC<{ shortcuts: string[] }> = ({ shortcuts }
   )
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      children,
-      tooltip,
-      showTooltip = true,
-      shortcutKeys,
-      asChild = false,
-      "aria-label": ariaLabel,
-      ...props
-    },
-    ref
-  ) => {
-    const shortcuts = React.useMemo(() => parseShortcutKeys({ shortcutKeys }), [shortcutKeys])
+export const Button = ({
+  className,
+  children,
+  tooltip,
+  showTooltip = true,
+  shortcutKeys,
+  asChild = false,
+  "aria-label": ariaLabel,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const shortcuts = React.useMemo(() => parseShortcutKeys({ shortcutKeys }), [shortcutKeys])
 
-    // When asChild is true, always render just the button element (no tooltip)
-    // This allows parent components like PopoverTrigger to properly merge with it
-    if (asChild || !(tooltip && showTooltip)) {
-      return (
+  // When asChild is true, always render just the button element (no tooltip)
+  // This allows parent components like PopoverTrigger to properly merge with it
+  if (asChild || !(tooltip && showTooltip)) {
+    return (
+      <button
+        aria-label={ariaLabel}
+        className={cn("tiptap-button", className)}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+
+  return (
+    <Tooltip delay={200}>
+      <TooltipTrigger asChild>
         <button
           aria-label={ariaLabel}
           className={cn("tiptap-button", className)}
@@ -63,49 +74,35 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         >
           {children}
         </button>
-      )
-    }
-
-    return (
-      <Tooltip delay={200}>
-        <TooltipTrigger asChild>
-          <button
-            aria-label={ariaLabel}
-            className={cn("tiptap-button", className)}
-            ref={ref}
-            {...props}
-          >
-            {children}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {tooltip}
-          <ShortcutDisplay shortcuts={shortcuts} />
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-)
+      </TooltipTrigger>
+      <TooltipContent>
+        {tooltip}
+        <ShortcutDisplay shortcuts={shortcuts} />
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 Button.displayName = "Button"
 
-export const ButtonGroup = React.forwardRef<
-  HTMLFieldSetElement,
-  React.ComponentProps<"fieldset"> & {
-    orientation?: "horizontal" | "vertical"
-  }
->(({ className, children, orientation = "vertical", ...props }, ref) => {
-  return (
-    <fieldset
-      className={cn("tiptap-button-group", className)}
-      data-orientation={orientation}
-      ref={ref}
-      {...props}
-    >
-      {children}
-    </fieldset>
-  )
-})
+export const ButtonGroup = ({
+  className,
+  children,
+  orientation = "vertical",
+  ref,
+  ...props
+}: (React.ComponentProps<"fieldset"> & {
+  orientation?: "horizontal" | "vertical"
+}) & { ref?: React.Ref<HTMLFieldSetElement> }) => (
+  <fieldset
+    className={cn("tiptap-button-group", className)}
+    data-orientation={orientation}
+    ref={ref}
+    {...props}
+  >
+    {children}
+  </fieldset>
+)
 ButtonGroup.displayName = "ButtonGroup"
 
 export default Button

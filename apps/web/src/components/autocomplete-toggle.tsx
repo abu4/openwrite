@@ -23,9 +23,9 @@ interface Model {
 
 interface AutocompleteToggleProps {
   isEnabled?: boolean
+  onModelChange?: (model: string, provider: string) => void
   onToggle?: (enabled: boolean) => void
   selectedModel?: string
-  onModelChange?: (model: string, provider: string) => void
 }
 
 export function AutocompleteToggle({
@@ -117,29 +117,25 @@ export function AutocompleteToggle({
       {} as Record<string, Model[]>
     )
 
-    return Object.entries(providerGroups).map(([providerLabel, models], index) => {
-      return (
-        <div key={providerLabel}>
-          {index > 0 && <DropdownMenuSeparator />}
-          <DropdownMenuLabel className="text-muted-foreground text-xs">
-            {providerLabel}
-          </DropdownMenuLabel>
-          {models.map((model) => {
-            return (
-              <DropdownMenuItem
-                className="cursor-pointer"
-                key={`${model.provider}-${model.id}`}
-                onClick={() => handleModelSelect(model.id, model.provider)}
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm">{model.name}</span>
-                </div>
-              </DropdownMenuItem>
-            )
-          })}
-        </div>
-      )
-    })
+    return Object.entries(providerGroups).map(([providerLabel, models], index) => (
+      <div key={providerLabel}>
+        {index > 0 && <DropdownMenuSeparator />}
+        <DropdownMenuLabel className="text-muted-foreground text-xs">
+          {providerLabel}
+        </DropdownMenuLabel>
+        {models.map((model) => (
+          <DropdownMenuItem
+            className="cursor-pointer"
+            key={`${model.provider}-${model.id}`}
+            onClick={() => handleModelSelect(model.id, model.provider)}
+          >
+            <div className="flex flex-col">
+              <span className="text-sm">{model.name}</span>
+            </div>
+          </DropdownMenuItem>
+        ))}
+      </div>
+    ))
   }
 
   return (

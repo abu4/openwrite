@@ -21,10 +21,10 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { api } from "@/lib/api"
 
 interface DualSidebarWritingInterfaceProps {
-  projectId: string
   content?: string
   onUpdate?: (content: string) => void
   placeholder?: string
+  projectId: string
 }
 
 // Inner component that has access to sidebar context

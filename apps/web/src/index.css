@@ -74,8 +74,8 @@ body {
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .toaster[data-sonner-toaster] [data-sonner-toast] {
-    animation: none;
     transition: opacity 0.2s ease-in-out;
+    animation: none;
   }
 }
 
@@ -317,19 +317,19 @@ body {
 
 /* Tiptap Placeholder Styles */
 .ProseMirror p.is-editor-empty:first-child::before {
-  @apply text-muted-foreground pointer-events-none;
-  content: attr(data-placeholder);
   float: left;
   height: 0;
+  content: attr(data-placeholder);
+  @apply text-muted-foreground pointer-events-none;
 }
 
 /* Story Canvas grid pattern */
 .bg-grid-pattern {
+  background-color: hsl(var(--background));
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
   background-size: 20px 20px;
-  background-color: hsl(var(--background));
 }
 
 /* Story Canvas element drag cursor */
@@ -348,8 +348,8 @@ body {
 }
 
 .story-element-card:hover {
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 /* Story Canvas selected element ring */

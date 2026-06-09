@@ -8,26 +8,26 @@
 import { type ApiClient, apiCall } from "./base"
 
 export interface Location {
-  id: string
-  name: string
+  createdAt: Date
   description?: string
-  // type field removed - users can describe location types freely in description
-  projectId?: string
-  workId?: string
-  parentLocationId?: string | null
+  id: string
   image?: string
   metadata?: string
-  createdAt: Date
+  name: string
+  parentLocationId?: string | null
+  // type field removed - users can describe location types freely in description
+  projectId?: string
   updatedAt: Date
+  workId?: string
 }
 
 export interface CreateLocationData {
-  name: string
   description?: string
-  // type field removed
-  parentLocationId?: string | null
   image?: string
   metadata?: string
+  name: string
+  // type field removed
+  parentLocationId?: string | null
 }
 
 export interface UpdateLocationData extends Partial<CreateLocationData> {}

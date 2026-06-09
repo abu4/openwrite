@@ -25,7 +25,7 @@ export default function WriteHeader({ breadcrumbs }: WriteHeaderProps) {
         <Breadcrumb>
           <BreadcrumbList>
             {breadcrumbs.map((crumb, index) => (
-              <div className="flex items-center" key={`${crumb.label}-${index}`}>
+              <div className="flex items-center" key={crumb.label}>
                 <BreadcrumbItem>
                   {crumb.to ? (
                     <BreadcrumbLink asChild>

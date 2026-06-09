@@ -35,11 +35,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { api, type Character, type Location } from "@/lib/api"
 
 interface CodexModalProps {
+  initialEntry?: string | null
+  initialType?: string | null
   isOpen: boolean
   onClose: () => void
   projectId: string
-  initialType?: string | null
-  initialEntry?: string | null
 }
 
 type CodexEntry = Character | { id: string; name: string; description?: string }

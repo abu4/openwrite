@@ -16,13 +16,13 @@ export type UndoRedoAction = "undo" | "redo"
  */
 export interface UseUndoRedoConfig {
   /**
-   * The Tiptap editor instance.
-   */
-  editor?: Editor | null
-  /**
    * The history action to perform (undo or redo).
    */
   action: UndoRedoAction
+  /**
+   * The Tiptap editor instance.
+   */
+  editor?: Editor | null
   /**
    * Whether the button should hide when action is not available.
    * @default false

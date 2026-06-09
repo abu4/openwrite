@@ -13,9 +13,9 @@ import {
 import { api, type Location } from "@/lib/api"
 
 interface DeleteLocationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
   location: Location
+  onOpenChange: (open: boolean) => void
+  open: boolean
   projectId: string
 }
 

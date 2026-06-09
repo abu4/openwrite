@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Code2, GitFork, Github, Heart, Star, Users } from "lucide-react"
+import { Code2, GitFork, Heart, Star, Users } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { GithubIcon } from "@/components/ui/github-icon"
 import { Separator } from "@/components/ui/separator"
 
 export const Route = createFileRoute("/")({
@@ -237,7 +238,7 @@ function HomeComponent() {
         <div className="mb-6 flex flex-wrap justify-center gap-4">
           <Button asChild className="gap-2" variant="outline">
             <a href="https://github.com/ilrein/openwrite" rel="noopener noreferrer" target="_blank">
-              <Github className="h-4 w-4" />
+              <GithubIcon className="h-4 w-4" />
               View Source
             </a>
           </Button>
@@ -286,7 +287,7 @@ function HomeComponent() {
 
           <Card>
             <CardContent className="flex flex-col items-center p-6">
-              <Github className="mb-3 h-8 w-8 text-primary" />
+              <GithubIcon className="mb-3 h-8 w-8 text-primary" />
               <h3 className="mb-2 font-semibold">Always Transparent</h3>
               <p className="text-center text-muted-foreground text-sm">
                 All development happens in the open on GitHub

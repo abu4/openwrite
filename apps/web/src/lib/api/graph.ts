@@ -19,72 +19,72 @@ export type ConnectionType =
   | "reference"
 
 export interface GraphNode {
-  id: string
-  projectId: string
-  nodeType: GraphNodeType
-  subType?: string // For story_element: act|chapter|scene|beat|plot_point
-  title: string
+  createdAt: Date
   description?: string
+  id: string
+  metadata?: string // JSON string for flexible data
+  nodeType: GraphNodeType
   positionX: number
   positionY: number
-  visualProperties?: string // JSON string for {color, size, icon, shape}
-  metadata?: string // JSON string for flexible data
-  wordCount: number
-  createdAt: Date
+  projectId: string
+  subType?: string // For story_element: act|chapter|scene|beat|plot_point
+  title: string
   updatedAt: Date
+  visualProperties?: string // JSON string for {color, size, icon, shape}
+  wordCount: number
 }
 
 export interface TextBlock {
-  id: string
-  storyNodeId: string
   content?: string
-  orderIndex: number
-  wordCount: number
   createdAt: Date
+  id: string
+  orderIndex: number
+  storyNodeId: string
   updatedAt: Date
+  wordCount: number
 }
 
 export interface GraphConnection {
+  connectionStrength: number
+  connectionType: ConnectionType
+  createdAt: Date
   id: string
+  metadata?: string
   projectId: string
   sourceNodeId: string
   targetNodeId: string
-  connectionType: ConnectionType
-  connectionStrength: number
-  visualProperties?: string // JSON string for line styling
-  metadata?: string
-  createdAt: Date
   updatedAt: Date
+  visualProperties?: string // JSON string for line styling
 }
 
 export interface CreateGraphNodeData {
-  nodeType: GraphNodeType
-  subType?: string
-  title: string
   description?: string
+  metadata?: string
+  nodeType: GraphNodeType
   positionX?: number
   positionY?: number
+  subType?: string
+  title: string
   visualProperties?: string
-  metadata?: string
 }
 
 export interface UpdateGraphNodeData extends Partial<CreateGraphNodeData> {}
 
 export interface CreateTextBlockData {
-  storyNodeId: string
   content?: string
   orderIndex?: number
+  storyNodeId: string
 }
 
 export interface UpdateTextBlockData extends Partial<CreateTextBlockData> {}
 
 export interface CreateGraphConnectionData {
+  connectionStrength?: number
+  connectionType: ConnectionType
+  metadata?: string
   sourceNodeId: string
   targetNodeId: string
-  connectionType: ConnectionType
-  connectionStrength?: number
   visualProperties?: string
-  metadata?: string
 }
 
 export interface UpdateGraphConnectionData extends Partial<CreateGraphConnectionData> {}
@@ -231,40 +231,30 @@ export const graphApi = {
   listNodes: (projectId: string) => createGraphNodeApi(projectId).list(),
   createNode: (projectId: string, data: CreateGraphNodeData) =>
     createGraphNodeApi(projectId).create(data),
-  updateNode: (projectId: string, nodeId: string, data: UpdateGraphNodeData) => {
-    return createGraphNodeApi(projectId).update(nodeId, data)
-  },
+  updateNode: (projectId: string, nodeId: string, data: UpdateGraphNodeData) =>
+    createGraphNodeApi(projectId).update(nodeId, data),
   updateNodePosition: async (
     projectId: string,
     nodeId: string,
     positionX: number,
     positionY: number
-  ) => {
-    return await apiCall(`/api/projects/${projectId}/graph/nodes/${nodeId}/position`, {
+  ) =>
+    await apiCall(`/api/projects/${projectId}/graph/nodes/${nodeId}/position`, {
       method: "PUT",
       body: JSON.stringify({ positionX, positionY }),
-    })
-  },
-  deleteNode: (projectId: string, nodeId: string) => {
-    return createGraphNodeApi(projectId).delete(nodeId)
-  },
+    }),
+  deleteNode: (projectId: string, nodeId: string) => createGraphNodeApi(projectId).delete(nodeId),
 
-  listConnections: (projectId: string) => {
-    return createGraphConnectionApi(projectId).list()
-  },
-  createConnection: (projectId: string, data: CreateGraphConnectionData) => {
-    return createGraphConnectionApi(projectId).create(data)
-  },
-  deleteConnection: (projectId: string, connectionId: string) => {
-    return createGraphConnectionApi(projectId).delete(connectionId)
-  },
+  listConnections: (projectId: string) => createGraphConnectionApi(projectId).list(),
+  createConnection: (projectId: string, data: CreateGraphConnectionData) =>
+    createGraphConnectionApi(projectId).create(data),
+  deleteConnection: (projectId: string, connectionId: string) =>
+    createGraphConnectionApi(projectId).delete(connectionId),
 
-  listTextBlocks: (projectId: string, storyNodeId: string) => {
-    return createTextBlockApi(projectId).list(storyNodeId)
-  },
-  createTextBlock: (projectId: string, data: CreateTextBlockData) => {
-    return createTextBlockApi(projectId).create(data)
-  },
+  listTextBlocks: (projectId: string, storyNodeId: string) =>
+    createTextBlockApi(projectId).list(storyNodeId),
+  createTextBlock: (projectId: string, data: CreateTextBlockData) =>
+    createTextBlockApi(projectId).create(data),
 
   // Utility functions for working with graph data
   parseVisualProperties: (visualProps?: string) => {
@@ -278,9 +268,7 @@ export const graphApi = {
     }
   },
 
-  stringifyVisualProperties: (props: Record<string, unknown>) => {
-    return JSON.stringify(props)
-  },
+  stringifyVisualProperties: (props: Record<string, unknown>) => JSON.stringify(props),
 
   parseMetadata: (metadata?: string) => {
     if (!metadata) {
@@ -293,7 +281,5 @@ export const graphApi = {
     }
   },
 
-  stringifyMetadata: (metadata: Record<string, unknown>) => {
-    return JSON.stringify(metadata)
-  },
+  stringifyMetadata: (metadata: Record<string, unknown>) => JSON.stringify(metadata),
 }

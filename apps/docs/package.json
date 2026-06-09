@@ -7,7 +7,7 @@
     "build": "vitepress build",
     "preview": "vitepress preview",
     "check-types": "tsc --noEmit",
-    "lint": "biome check *.ts *.md",
+    "lint": "biome check .",
     "format": "biome format --write ."
   },
   "devDependencies": {

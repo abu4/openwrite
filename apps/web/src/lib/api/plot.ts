@@ -8,26 +8,26 @@
 import { type ApiClient, apiCall } from "./base"
 
 export interface PlotThread {
-  id: string
-  title: string
-  description?: string
-  type?: string // Type of plot point (inciting_incident, plot_point_1, etc.)
-  order: number
-  status?: string // planned, in_progress, completed
   chapterId?: string
-  projectId?: string
-  workId?: string
   createdAt: Date
+  description?: string
+  id: string
+  order: number
+  projectId?: string
+  status?: string // planned, in_progress, completed
+  title: string
+  type?: string // Type of plot point (inciting_incident, plot_point_1, etc.)
   updatedAt: Date
+  workId?: string
 }
 
 export interface CreatePlotData {
-  title: string
+  chapterId?: string
   description?: string
-  type?: string
   order: number
   status?: string
-  chapterId?: string
+  title: string
+  type?: string
 }
 
 export interface UpdatePlotData extends Partial<CreatePlotData> {}

@@ -14,14 +14,14 @@ import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 export interface BlockquoteButtonProps extends Omit<ButtonProps, "type">, UseBlockquoteConfig {
   /**
-   * Optional text to display alongside the icon.
-   */
-  text?: string
-  /**
    * Optional show shortcut keys in the button.
    * @default false
    */
   showShortcut?: boolean
+  /**
+   * Optional text to display alongside the icon.
+   */
+  text?: string
 }
 
 export function BlockquoteShortcutBadge({
@@ -37,68 +37,65 @@ export function BlockquoteShortcutBadge({
  *
  * For custom button implementations, use the `useBlockquote` hook instead.
  */
-export const BlockquoteButton = React.forwardRef<HTMLButtonElement, BlockquoteButtonProps>(
-  (
+export const BlockquoteButton = ({
+  editor: providedEditor,
+  text,
+  hideWhenUnavailable = false,
+  onToggled,
+  showShortcut = false,
+  onClick,
+  children,
+  ref,
+  ...buttonProps
+}: BlockquoteButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { editor } = useTiptapEditor(providedEditor)
+  const { isVisible, canToggle, isActive, handleToggle, label, shortcutKeys, Icon } = useBlockquote(
     {
-      editor: providedEditor,
-      text,
-      hideWhenUnavailable = false,
+      editor,
+      hideWhenUnavailable,
       onToggled,
-      showShortcut = false,
-      onClick,
-      children,
-      ...buttonProps
-    },
-    ref
-  ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const { isVisible, canToggle, isActive, handleToggle, label, shortcutKeys, Icon } =
-      useBlockquote({
-        editor,
-        hideWhenUnavailable,
-        onToggled,
-      })
-
-    const handleClick = React.useCallback(
-      (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        handleToggle()
-      },
-      [handleToggle, onClick]
-    )
-
-    if (!isVisible) {
-      return null
     }
+  )
 
-    return (
-      <Button
-        aria-label={label}
-        aria-pressed={isActive}
-        data-active-state={isActive ? "on" : "off"}
-        data-disabled={!canToggle}
-        data-style="ghost"
-        disabled={!canToggle}
-        onClick={handleClick}
-        tabIndex={-1}
-        tooltip="Blockquote"
-        type="button"
-        {...buttonProps}
-        ref={ref}
-      >
-        {children ?? (
-          <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
-            {showShortcut && <BlockquoteShortcutBadge shortcutKeys={shortcutKeys} />}
-          </>
-        )}
-      </Button>
-    )
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event)
+      if (event.defaultPrevented) {
+        return
+      }
+      handleToggle()
+    },
+    [handleToggle, onClick]
+  )
+
+  if (!isVisible) {
+    return null
   }
-)
+
+  return (
+    <Button
+      aria-label={label}
+      aria-pressed={isActive}
+      data-active-state={isActive ? "on" : "off"}
+      data-disabled={!canToggle}
+      data-style="ghost"
+      disabled={!canToggle}
+      onClick={handleClick}
+      tabIndex={-1}
+      tooltip="Blockquote"
+      type="button"
+      {...buttonProps}
+      ref={ref}
+    >
+      {children ?? (
+        <>
+          <Icon className="tiptap-button-icon" />
+          {text && <span className="tiptap-button-text">{text}</span>}
+          {showShortcut && <BlockquoteShortcutBadge shortcutKeys={shortcutKeys} />}
+        </>
+      )}
+    </Button>
+  )
+}
 
 BlockquoteButton.displayName = "BlockquoteButton"

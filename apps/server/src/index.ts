@@ -10,9 +10,9 @@ import "./routes/user"
 
 interface Env {
   ASSETS: Fetcher
-  CORS_ORIGIN: string
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  CORS_ORIGIN: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -111,7 +111,7 @@ app.get("/api/private-data", async (c) => {
       message: "This is private data",
       user: session.user,
     })
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Internal server error" }, 500)
   }
 })
@@ -130,7 +130,7 @@ app.get("*", async (c) => {
   try {
     const assetResponse = await c.env.ASSETS.fetch(c.req.raw)
     return assetResponse
-  } catch (_error) {
+  } catch {
     return c.notFound()
   }
 })

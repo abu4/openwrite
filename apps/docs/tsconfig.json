@@ -26,10 +26,10 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
+  "include": [".vitepress/**/*.ts", ".vitepress/**/*.vue"],
   "exclude": [
     "wrangler.jsonc",
     "*.config.js",
-    "*.config.ts",
     "dist",
     "node_modules",
     ".vitepress/dist",

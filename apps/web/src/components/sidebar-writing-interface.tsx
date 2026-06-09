@@ -4,10 +4,10 @@ import { Sidebar, SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 interface SidebarWritingInterfaceProps {
   content?: string
+  onSidebarOpenChange?: (open: boolean) => void
   onUpdate?: (content: string) => void
   placeholder?: string
   sidebarOpen?: boolean
-  onSidebarOpenChange?: (open: boolean) => void
 }
 
 export function SidebarWritingInterface({

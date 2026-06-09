@@ -6,27 +6,27 @@ import { getAuth } from "../lib/auth"
 import { decryptApiKey, encryptApiKey, hashApiKey } from "../lib/encryption"
 
 interface Env {
-  CORS_ORIGIN: string
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  CORS_ORIGIN: string
   ENCRYPTION_KEY: string
 }
 
 interface Variables {
-  user: {
-    id: string
-    email: string
-    name: string
-  }
-  session: {
-    id: string
-    userId: string
-  }
   activeOrganization: {
     id: string
     name: string
     slug: string
   } | null
+  session: {
+    id: string
+    userId: string
+  }
+  user: {
+    id: string
+    email: string
+    name: string
+  }
 }
 
 const aiProvidersRouter = new Hono<{ Bindings: Env; Variables: Variables }>()
@@ -71,7 +71,7 @@ const requireAuth = async (
       c.set("activeOrganization", null)
     }
     await next()
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Authentication failed" }, 401)
   }
 }
@@ -87,7 +87,7 @@ function prepareProviderConfig(
 ): string | null {
   const combinedConfig = {
     ...(providerConfig || {}),
-    ...(apiUrl != null ? { apiUrl } : {}),
+    ...(apiUrl == null ? {} : { apiUrl }),
     ...(configuration || {}),
   }
 
@@ -207,7 +207,7 @@ aiProvidersRouter.post("/", async (c: Context<{ Bindings: Env; Variables: Variab
     })
 
     return c.json({ success: true, id })
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Failed to create AI provider" }, 500)
   }
 })
@@ -216,6 +216,10 @@ aiProvidersRouter.post("/", async (c: Context<{ Bindings: Env; Variables: Variab
 aiProvidersRouter.put("/:id", async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
   const providerId = c.req.param("id")
   const user = c.get("user")
+
+  if (!providerId) {
+    return c.json({ error: "Provider ID is required" }, 400)
+  }
 
   try {
     const body = await c.req.json()
@@ -243,10 +247,10 @@ aiProvidersRouter.put("/:id", async (c: Context<{ Bindings: Env; Variables: Vari
     await db
       .update(aiProvider)
       .set({
-        keyLabel: keyLabel !== undefined ? keyLabel : undefined,
-        isActive: isActive !== undefined ? isActive : undefined,
-        isDefault: isDefault !== undefined ? isDefault : undefined,
-        usageLimit: usageLimit !== undefined ? usageLimit : undefined,
+        keyLabel: keyLabel === undefined ? undefined : keyLabel,
+        isActive: isActive === undefined ? undefined : isActive,
+        isDefault: isDefault === undefined ? undefined : isDefault,
+        usageLimit: usageLimit === undefined ? undefined : usageLimit,
         supportedModels: supportedModels ? JSON.stringify(supportedModels) : undefined,
         providerConfig: providerConfig ? JSON.stringify(providerConfig) : undefined,
         updatedAt: new Date(),
@@ -254,7 +258,7 @@ aiProvidersRouter.put("/:id", async (c: Context<{ Bindings: Env; Variables: Vari
       .where(and(eq(aiProvider.id, providerId), eq(aiProvider.userId, user.id)))
 
     return c.json({ success: true })
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Failed to update AI provider" }, 500)
   }
 })
@@ -264,13 +268,17 @@ aiProvidersRouter.delete("/:id", async (c: Context<{ Bindings: Env; Variables: V
   const providerId = c.req.param("id")
   const user = c.get("user")
 
+  if (!providerId) {
+    return c.json({ error: "Provider ID is required" }, 400)
+  }
+
   try {
     await db
       .delete(aiProvider)
       .where(and(eq(aiProvider.id, providerId), eq(aiProvider.userId, user.id)))
 
     return c.json({ success: true })
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Failed to delete AI provider" }, 500)
   }
 })
@@ -279,6 +287,10 @@ aiProvidersRouter.delete("/:id", async (c: Context<{ Bindings: Env; Variables: V
 aiProvidersRouter.get("/:id", async (c: Context<{ Bindings: Env; Variables: Variables }>) => {
   const providerId = c.req.param("id")
   const user = c.get("user")
+
+  if (!providerId) {
+    return c.json({ error: "Provider ID is required" }, 400)
+  }
 
   const provider = await db
     .select({
@@ -406,7 +418,7 @@ aiProvidersRouter.post(
       })
 
       return c.json({ success: true, id })
-    } catch (_error) {
+    } catch {
       return c.json({ error: "Failed to exchange code" }, 500)
     }
   }
@@ -437,7 +449,7 @@ export async function getDecryptedApiKey(
 
   try {
     return await decryptApiKey(providerRecord.apiKey, env)
-  } catch (_error) {
+  } catch {
     // Failed to decrypt - key may be corrupted or encryption key changed
     return null
   }

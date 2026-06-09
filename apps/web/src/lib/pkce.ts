@@ -25,9 +25,9 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
 }
 
 export interface PKCEParams {
-  codeVerifier: string
   codeChallenge: string
   codeChallengeMethod: "S256"
+  codeVerifier: string
 }
 
 export async function generatePKCEParams(): Promise<PKCEParams> {

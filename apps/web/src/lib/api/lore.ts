@@ -8,22 +8,22 @@
 import { type ApiClient, apiCall } from "./base"
 
 export interface LoreEntry {
-  id: string
-  name: string
-  description?: string
-  type?: string // Generic type field for categorization
-  projectId?: string
-  workId?: string
-  metadata?: string
   createdAt: Date
+  description?: string
+  id: string
+  metadata?: string
+  name: string
+  projectId?: string
+  type?: string // Generic type field for categorization
   updatedAt: Date
+  workId?: string
 }
 
 export interface CreateLoreData {
-  name: string
   description?: string
-  type?: string
   metadata?: string
+  name: string
+  type?: string
 }
 
 export interface UpdateLoreData extends Partial<CreateLoreData> {}

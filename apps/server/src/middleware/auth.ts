@@ -5,26 +5,26 @@ import { member, organization, project } from "../db/schema"
 import { getAuth } from "../lib/auth"
 
 interface Env {
-  CORS_ORIGIN: string
   BETTER_AUTH_SECRET: string
   BETTER_AUTH_URL: string
+  CORS_ORIGIN: string
 }
 
 interface Variables {
-  user: {
-    id: string
-    email: string
-    name: string
-  }
-  session: {
-    id: string
-    userId: string
-  }
   activeOrganization: {
     id: string
     name: string
     slug: string
   } | null
+  session: {
+    id: string
+    userId: string
+  }
+  user: {
+    id: string
+    email: string
+    name: string
+  }
 }
 
 // Middleware to get authenticated user and active organization
@@ -68,7 +68,7 @@ export const requireAuth = async (
       c.set("activeOrganization", null)
     }
     await next()
-  } catch (_error) {
+  } catch {
     return c.json({ error: "Authentication failed" }, 401)
   }
 }
@@ -80,6 +80,10 @@ export const verifyProjectAccess = async (
 ) => {
   const projectId = c.req.param("projectId")
   const activeOrganization = c.get("activeOrganization")
+
+  if (!projectId) {
+    return c.json({ error: "Project ID is required" }, 400)
+  }
 
   if (!activeOrganization) {
     return c.json({ error: "No organization found" }, 400)

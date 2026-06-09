@@ -64,7 +64,7 @@ app.openapi(
         content: {
           "application/json": {
             schema: z.object({
-              nodes: z.array(z.any()), // We'll improve this typing later
+              nodes: z.array(z.unknown()),
             }),
           },
         },
@@ -209,7 +209,7 @@ app.openapi(
         content: {
           "application/json": {
             schema: z.object({
-              textBlocks: z.array(z.any()),
+              textBlocks: z.array(z.unknown()),
             }),
           },
         },
@@ -295,7 +295,7 @@ app.openapi(
         content: {
           "application/json": {
             schema: z.object({
-              connections: z.array(z.any()),
+              connections: z.array(z.unknown()),
             }),
           },
         },

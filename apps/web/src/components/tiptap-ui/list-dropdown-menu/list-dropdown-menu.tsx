@@ -24,10 +24,6 @@ export interface ListDropdownMenuProps extends Omit<ButtonProps, "type"> {
    */
   editor?: Editor
   /**
-   * The list types to display in the dropdown.
-   */
-  types?: ListType[]
-  /**
    * Whether the dropdown should be hidden when no list types are available
    * @default false
    */
@@ -41,6 +37,10 @@ export interface ListDropdownMenuProps extends Omit<ButtonProps, "type"> {
    * @default false
    */
   portal?: boolean
+  /**
+   * The list types to display in the dropdown.
+   */
+  types?: ListType[]
 }
 
 export function ListDropdownMenu({
@@ -68,7 +68,7 @@ export function ListDropdownMenu({
     [onOpenChange]
   )
 
-  if (!(isVisible && editor && editor.isEditable)) {
+  if (!(isVisible && editor?.isEditable)) {
     return null
   }
 

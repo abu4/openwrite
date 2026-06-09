@@ -36,11 +36,11 @@ const locationSchema = z.object({
 type LocationFormData = z.infer<typeof locationSchema>
 
 interface LocationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  projectId: string
   location?: Location | null
   mode: "create" | "edit"
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  projectId: string
 }
 
 export function LocationDialog({

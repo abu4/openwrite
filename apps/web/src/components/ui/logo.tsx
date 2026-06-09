@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils"
 
 interface LogoProps {
   className?: string
-  to?: string
-  size?: "sm" | "md" | "lg"
   showText?: boolean
+  size?: "sm" | "md" | "lg"
+  to?: string
 }
 
 export function Logo({ className, to = "/", size = "md", showText = true }: LogoProps) {

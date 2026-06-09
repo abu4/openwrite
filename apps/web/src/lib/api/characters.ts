@@ -8,26 +8,26 @@
 import { type ApiClient, apiCall } from "./base"
 
 export interface Character {
-  id: string
-  name: string
+  createdAt: Date
   description?: string
+  id: string
+  image?: string
+  metadata?: string
+  name: string
   // role field removed - users can describe character roles freely in description
   // appearance, personality, backstory, motivation removed - simplified to just name and description
   projectId?: string
-  workId?: string
-  image?: string
-  metadata?: string
-  createdAt: Date
   updatedAt: Date
+  workId?: string
 }
 
 export interface CreateCharacterData {
-  name: string
   description?: string
   // role field removed
   // appearance, personality, backstory, motivation removed - simplified to just name and description
   image?: string
   metadata?: string
+  name: string
 }
 
 export interface UpdateCharacterData extends Partial<CreateCharacterData> {}

@@ -31,14 +31,14 @@ export interface UseHeadingConfig {
    */
   editor?: Editor | null
   /**
-   * The heading level.
-   */
-  level: Level
-  /**
    * Whether the button should hide when heading is not available.
    * @default false
    */
   hideWhenUnavailable?: boolean
+  /**
+   * The heading level.
+   */
+  level: Level
   /**
    * Callback function called after a successful heading toggle.
    */

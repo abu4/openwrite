@@ -16,14 +16,14 @@ import { parseShortcutKeys } from "@/lib/tiptap-utils"
 
 export interface ImageUploadButtonProps extends Omit<ButtonProps, "type">, UseImageUploadConfig {
   /**
-   * Optional text to display alongside the icon.
-   */
-  text?: string
-  /**
    * Optional show shortcut keys in the button.
    * @default false
    */
   showShortcut?: boolean
+  /**
+   * Optional text to display alongside the icon.
+   */
+  text?: string
 }
 
 export function ImageShortcutBadge({
@@ -39,68 +39,65 @@ export function ImageShortcutBadge({
  *
  * For custom button implementations, use the `useImage` hook instead.
  */
-export const ImageUploadButton = React.forwardRef<HTMLButtonElement, ImageUploadButtonProps>(
-  (
+export const ImageUploadButton = ({
+  editor: providedEditor,
+  text,
+  hideWhenUnavailable = false,
+  onInserted,
+  showShortcut = false,
+  onClick,
+  children,
+  ref,
+  ...buttonProps
+}: ImageUploadButtonProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { editor } = useTiptapEditor(providedEditor)
+  const { isVisible, canInsert, handleImage, label, isActive, shortcutKeys, Icon } = useImageUpload(
     {
-      editor: providedEditor,
-      text,
-      hideWhenUnavailable = false,
+      editor,
+      hideWhenUnavailable,
       onInserted,
-      showShortcut = false,
-      onClick,
-      children,
-      ...buttonProps
-    },
-    ref
-  ) => {
-    const { editor } = useTiptapEditor(providedEditor)
-    const { isVisible, canInsert, handleImage, label, isActive, shortcutKeys, Icon } =
-      useImageUpload({
-        editor,
-        hideWhenUnavailable,
-        onInserted,
-      })
-
-    const handleClick = React.useCallback(
-      (event: React.MouseEvent<HTMLButtonElement>) => {
-        onClick?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        handleImage()
-      },
-      [handleImage, onClick]
-    )
-
-    if (!isVisible) {
-      return null
     }
+  )
 
-    return (
-      <Button
-        aria-label={label}
-        aria-pressed={isActive}
-        data-active-state={isActive ? "on" : "off"}
-        data-disabled={!canInsert}
-        data-style="ghost"
-        disabled={!canInsert}
-        onClick={handleClick}
-        tabIndex={-1}
-        tooltip={label}
-        type="button"
-        {...buttonProps}
-        ref={ref}
-      >
-        {children ?? (
-          <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
-            {showShortcut && <ImageShortcutBadge shortcutKeys={shortcutKeys} />}
-          </>
-        )}
-      </Button>
-    )
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(event)
+      if (event.defaultPrevented) {
+        return
+      }
+      handleImage()
+    },
+    [handleImage, onClick]
+  )
+
+  if (!isVisible) {
+    return null
   }
-)
+
+  return (
+    <Button
+      aria-label={label}
+      aria-pressed={isActive}
+      data-active-state={isActive ? "on" : "off"}
+      data-disabled={!canInsert}
+      data-style="ghost"
+      disabled={!canInsert}
+      onClick={handleClick}
+      tabIndex={-1}
+      tooltip={label}
+      type="button"
+      {...buttonProps}
+      ref={ref}
+    >
+      {children ?? (
+        <>
+          <Icon className="tiptap-button-icon" />
+          {text && <span className="tiptap-button-text">{text}</span>}
+          {showShortcut && <ImageShortcutBadge shortcutKeys={shortcutKeys} />}
+        </>
+      )}
+    </Button>
+  )
+}
 
 ImageUploadButton.displayName = "ImageUploadButton"

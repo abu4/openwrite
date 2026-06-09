@@ -22,15 +22,15 @@ export interface UseHeadingDropdownMenuConfig {
    */
   editor?: Editor | null
   /**
-   * Available heading levels to show in the dropdown
-   * @default [1, 2, 3, 4, 5, 6]
-   */
-  levels?: Level[]
-  /**
    * Whether the dropdown should hide when headings are not available.
    * @default false
    */
   hideWhenUnavailable?: boolean
+  /**
+   * Available heading levels to show in the dropdown
+   * @default [1, 2, 3, 4, 5, 6]
+   */
+  levels?: Level[]
 }
 
 /**

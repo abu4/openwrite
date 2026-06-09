@@ -24,10 +24,6 @@ export interface UseMarkConfig {
    */
   editor?: Editor | null
   /**
-   * The type of mark to toggle
-   */
-  type: Mark
-  /**
    * Whether the button should hide when mark is not available.
    * @default false
    */
@@ -36,6 +32,10 @@ export interface UseMarkConfig {
    * Callback function called after a successful mark toggle.
    */
   onToggled?: () => void
+  /**
+   * The type of mark to toggle
+   */
+  type: Mark
 }
 
 export const markIcons = {
@@ -82,7 +82,7 @@ export function isMarkActive(editor: Editor | null, type: Mark): boolean {
 
   try {
     return editor.isActive(type)
-  } catch (_error) {
+  } catch {
     // Silently handle errors when checking mark active state
     return false
   }

@@ -31,10 +31,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { api, type GraphNode } from "@/lib/api"
 
 interface GraphWritingInterfaceProps {
-  projectId: string
-  selectedNode: GraphNode | null
   isOpen: boolean
   onClose: () => void
+  projectId: string
+  selectedNode: GraphNode | null
 }
 
 export function GraphWritingInterface({
@@ -61,9 +61,7 @@ export function GraphWritingInterface({
   // Load existing characters for character nodes
   const { data: characters = [] } = useQuery({
     queryKey: ["characters", projectId],
-    queryFn: async () => {
-      return await api.characters.list(projectId)
-    },
+    queryFn: async () => await api.characters.list(projectId),
     enabled: !!selectedNode && selectedNode.nodeType === "character",
   })
 
@@ -158,9 +156,8 @@ export function GraphWritingInterface({
     }
   }
 
-  const getTotalWordCount = () => {
-    return textBlocks.reduce((total, block) => total + (block.wordCount || 0), 0)
-  }
+  const getTotalWordCount = () =>
+    textBlocks.reduce((total, block) => total + (block.wordCount || 0), 0)
 
   if (!selectedNode) {
     return null
@@ -240,6 +237,7 @@ export function GraphWritingInterface({
                       </div>
                       <div className="prose text-sm">
                         {block.content?.split("\n").map((line, i) => (
+                          // biome-ignore lint/suspicious/noArrayIndexKey: split text lines have no stable id and never reorder
                           <p className="mb-2 last:mb-0" key={`${block.id}-line-${i}`}>
                             {line}
                           </p>

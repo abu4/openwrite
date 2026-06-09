@@ -5,49 +5,49 @@ import { apiCall } from "./base"
  * Project data types
  */
 export interface Project {
-  id: string
-  title: string
-  description: string | null
-  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
-  genre: string | null
-  status: "draft" | "in_progress" | "completed" | "published" | "archived"
-  visibility: "private" | "organization" | "public"
-  currentWordCount: number
-  targetWordCount: number | null
-  coverImage: string | null
   content?: string | null // Content field for writing interface
+  coverImage: string | null
   createdAt: string
-  updatedAt: string
+  currentWordCount: number
+  description: string | null
+  genre: string | null
+  id: string
   lastWrittenAt: string | null
+  status: "draft" | "in_progress" | "completed" | "published" | "archived"
+  targetWordCount: number | null
+  title: string
+  type: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
+  updatedAt: string
+  visibility: "private" | "organization" | "public"
 }
 
 export interface Work {
-  id: string
-  projectId: string
-  title: string
-  description: string | null
-  workType: "novel" | "short_story" | "novella" | "graphic_novel" | "screenplay"
-  order: number
-  targetWordCount: number | null
-  currentWordCount: number
-  status: "draft" | "in_progress" | "completed" | "published" | "archived"
   coverImage: string | null
-  metadata: string | null
   createdAt: string
-  updatedAt: string
-  publishedAt: string | null
+  currentWordCount: number
+  description: string | null
+  id: string
   lastWrittenAt: string | null
+  metadata: string | null
+  order: number
+  projectId: string
+  publishedAt: string | null
+  status: "draft" | "in_progress" | "completed" | "published" | "archived"
+  targetWordCount: number | null
+  title: string
+  updatedAt: string
+  workType: "novel" | "short_story" | "novella" | "graphic_novel" | "screenplay"
 }
 
 // Legacy type for backward compatibility
 export type Novel = Project
 
 export interface CreateProjectData {
-  title: string
   description?: string | null
-  type?: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   genre?: string | null
   targetWordCount?: number | null
+  title: string
+  type?: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   visibility?: "private" | "organization" | "public"
 }
 
@@ -55,11 +55,11 @@ export interface CreateProjectData {
 export type CreateNovelData = CreateProjectData
 
 export interface UpdateProjectData {
-  title?: string
   description?: string | null
-  type?: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   genre?: string | null
   targetWordCount?: number | null
+  title?: string
+  type?: "novel" | "trilogy" | "series" | "short_story_collection" | "graphic_novel" | "screenplay"
   visibility?: "private" | "organization" | "public"
 }
 

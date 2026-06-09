@@ -77,28 +77,28 @@ type StoryElementType = "act" | "chapter" | "scene" | "beat" | "plot-point"
 
 // Enhanced story node data interface matching our graph system
 interface StoryNodeData extends Record<string, unknown> {
-  // Core graph node properties
-  graphNodeId: string
-  nodeType: GraphNodeType
-  subType?: string
-  label: string
-  description: string
+  characters: string[]
 
   // Visual properties
   color: string
-  size: string
-  icon: string
-  shape: string
-
-  // Story-specific fields (for backward compatibility)
-  goals: string
   conflict: string
-  notes: string
-  characters: string[]
-  themes: string[]
+  description: string
 
   // Legacy field mapping
   elementType: StoryElementType
+
+  // Story-specific fields (for backward compatibility)
+  goals: string
+  // Core graph node properties
+  graphNodeId: string
+  icon: string
+  label: string
+  nodeType: GraphNodeType
+  notes: string
+  shape: string
+  size: string
+  subType?: string
+  themes: string[]
 }
 
 // Story node type
@@ -231,16 +231,12 @@ function StoryCanvas() {
   // Load graph data from API
   const { data: graphNodes = [] } = useQuery({
     queryKey: ["graph-nodes", projectId],
-    queryFn: async () => {
-      return await api.graph.listNodes(projectId)
-    },
+    queryFn: async () => await api.graph.listNodes(projectId),
   })
 
   const { data: graphConnections = [] } = useQuery({
     queryKey: ["graph-connections", projectId],
-    queryFn: async () => {
-      return await api.graph.listConnections(projectId)
-    },
+    queryFn: async () => await api.graph.listConnections(projectId),
   })
 
   // Convert graph nodes to ReactFlow nodes (memoized to prevent infinite loops)
@@ -275,15 +271,17 @@ function StoryCanvas() {
   }, [graphNodes])
 
   // Convert graph connections to ReactFlow edges (memoized to prevent infinite loops)
-  const flowEdges = useMemo(() => {
-    return graphConnections.map((conn) => ({
-      id: conn.id,
-      source: conn.sourceNodeId,
-      target: conn.targetNodeId,
-      type: "smoothstep",
-      animated: true,
-    }))
-  }, [graphConnections])
+  const flowEdges = useMemo(
+    () =>
+      graphConnections.map((conn) => ({
+        id: conn.id,
+        source: conn.sourceNodeId,
+        target: conn.targetNodeId,
+        type: "smoothstep",
+        animated: true,
+      })),
+    [graphConnections]
+  )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
@@ -339,9 +337,7 @@ function StoryCanvas() {
       nodeId: string
       positionX: number
       positionY: number
-    }) => {
-      return await api.graph.updateNodePosition(projectId, nodeId, positionX, positionY)
-    },
+    }) => await api.graph.updateNodePosition(projectId, nodeId, positionX, positionY),
     onError: (_error: Error) => {
       // Position update failed - could show user notification here
     },
@@ -353,15 +349,14 @@ function StoryCanvas() {
       sourceNodeId: string
       targetNodeId: string
       connectionType?: ConnectionType
-    }) => {
-      return await api.graph.createConnection(projectId, {
+    }) =>
+      await api.graph.createConnection(projectId, {
         sourceNodeId: params.sourceNodeId,
         targetNodeId: params.targetNodeId,
         connectionType: params.connectionType || "story_flow",
         connectionStrength: 1,
         metadata: api.graph.stringifyMetadata({}),
-      })
-    },
+      }),
     onSuccess: () => {
       // Refresh connections data after creation
       queryClient.invalidateQueries({ queryKey: ["graph-connections", projectId] })
@@ -373,9 +368,8 @@ function StoryCanvas() {
 
   // Delete connection mutation
   const deleteConnectionMutation = useMutation({
-    mutationFn: async (connectionId: string) => {
-      return await api.graph.deleteConnection(projectId, connectionId)
-    },
+    mutationFn: async (connectionId: string) =>
+      await api.graph.deleteConnection(projectId, connectionId),
     onSuccess: () => {
       // Refresh connections data after deletion
       queryClient.invalidateQueries({ queryKey: ["graph-connections", projectId] })
@@ -387,9 +381,7 @@ function StoryCanvas() {
 
   // Delete node mutation
   const deleteNodeMutation = useMutation({
-    mutationFn: async (nodeId: string) => {
-      return await api.graph.deleteNode(projectId, nodeId)
-    },
+    mutationFn: async (nodeId: string) => await api.graph.deleteNode(projectId, nodeId),
     onSuccess: () => {
       // Refresh both nodes and connections data after deletion
       queryClient.invalidateQueries({ queryKey: ["graph-nodes", projectId] })
@@ -451,7 +443,7 @@ function StoryCanvas() {
 
   // Handle node drag stop - update position in database
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: StoryNode) => {
+    (_event: MouseEvent | TouchEvent, node: StoryNode) => {
       // Extract the actual graph node ID from the React Flow node
       const graphNodeId = node.data.graphNodeId
       if (graphNodeId) {
@@ -531,14 +523,16 @@ function StoryCanvas() {
     }
   }, [])
 
-  const getNodeVisualProperties = useCallback((config: ReturnType<typeof getNodeConfig>) => {
-    return api.graph.stringifyVisualProperties({
-      color: config.color,
-      size: "medium",
-      icon: config.icon,
-      shape: config.shape,
-    })
-  }, [])
+  const getNodeVisualProperties = useCallback(
+    (config: ReturnType<typeof getNodeConfig>) =>
+      api.graph.stringifyVisualProperties({
+        color: config.color,
+        size: "medium",
+        icon: config.icon,
+        shape: config.shape,
+      }),
+    []
+  )
 
   const handleNodeCreationError = useCallback((error: unknown, nodeType: GraphNodeType) => {
     // biome-ignore lint/suspicious/noConsole: User specifically requested console.error for error handling
@@ -551,9 +545,8 @@ function StoryCanvas() {
   }, [])
 
   const waitForQueryInvalidation = useCallback(
-    (client: ReturnType<typeof useQueryClient>, queryKey: string[]): Promise<void> => {
-      return client.invalidateQueries({ queryKey })
-    },
+    (client: ReturnType<typeof useQueryClient>, queryKey: string[]): Promise<void> =>
+      client.invalidateQueries({ queryKey }),
     []
   )
 
@@ -615,21 +608,21 @@ function StoryCanvas() {
   )
 
   // Track loading state for all graph operations
-  const isGraphOperationPending = React.useMemo(() => {
-    return (
+  const isGraphOperationPending = React.useMemo(
+    () =>
       updateNodePositionMutation.isPending ||
       createConnectionMutation.isPending ||
       deleteConnectionMutation.isPending ||
       deleteNodeMutation.isPending ||
-      isCreatingNode
-    )
-  }, [
-    updateNodePositionMutation.isPending,
-    createConnectionMutation.isPending,
-    deleteConnectionMutation.isPending,
-    deleteNodeMutation.isPending,
-    isCreatingNode,
-  ])
+      isCreatingNode,
+    [
+      updateNodePositionMutation.isPending,
+      createConnectionMutation.isPending,
+      deleteConnectionMutation.isPending,
+      deleteNodeMutation.isPending,
+      isCreatingNode,
+    ]
+  )
 
   // Update selected node
   const updateSelectedNode = useCallback(
