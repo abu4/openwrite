@@ -37,6 +37,8 @@ export const invitation = sqliteTable("invitation", {
     .references(() => organization.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
   status: text("status").notNull(), // "pending", "accepted", "rejected", "expired"
+  // Optional team scoping for invites (required by better-auth when teams are enabled)
+  teamId: text("team_id").references(() => team.id, { onDelete: "cascade" }),
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })
