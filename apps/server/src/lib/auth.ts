@@ -84,7 +84,15 @@ function buildAuthInstance(env: AuthEnv) {
         },
       }),
     ],
-    trustedOrigins: [env.CORS_ORIGIN],
+    trustedOrigins: [
+      ...new Set(
+        [
+          env.CORS_ORIGIN,
+          env.BETTER_AUTH_URL,
+          "https://openwrite.ilia-reingold.workers.dev",
+        ].filter(Boolean)
+      ),
+    ],
     emailAndPassword: {
       enabled: true,
     },

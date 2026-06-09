@@ -4,7 +4,7 @@
 
 OpenWrite helps you plan, organize, and write long-form fiction — with an AI assistant that runs on **your own API keys**. No subscription, no markup on tokens, no lock-in. Your manuscript lives in your database (or ours, or one you self-host).
 
-**Try it:** [openwrite.ilia-reingold.workers.dev](https://openwrite.ilia-reingold.workers.dev)
+**Try it:** [openwrite.iliareingold.com](https://openwrite.iliareingold.com)
 
 ## What works today
 

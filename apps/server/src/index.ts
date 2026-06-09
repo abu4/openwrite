@@ -24,6 +24,8 @@ app.use(logger())
 app.use("/*", (c, next) => {
   const allowedOrigins = [
     c.env.CORS_ORIGIN,
+    "https://openwrite.iliareingold.com",
+    "https://openwrite.ilia-reingold.workers.dev",
     "http://localhost:3001",
     "https://localhost:3001",
   ].filter(Boolean) as string[]
