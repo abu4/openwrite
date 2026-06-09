@@ -244,6 +244,17 @@ export default function LoginBlock({ mode, onModeChange }: LoginBlockProps) {
                   </form.Field>
                 </div>
 
+                {mode === "signin" && (
+                  <div className="text-right">
+                    <Link
+                      className="text-muted-foreground text-sm underline-offset-4 hover:text-primary hover:underline"
+                      to="/forgot-password"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                )}
+
                 <form.Subscribe>
                   {(state) => (
                     <Button

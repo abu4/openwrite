@@ -13,6 +13,7 @@ import {
   user,
   verification,
 } from "../db/schema"
+import { sendActionEmail } from "./email"
 
 interface AuthEnv {
   BETTER_AUTH_SECRET: string
@@ -93,8 +94,29 @@ function buildAuthInstance(env: AuthEnv) {
         ].filter(Boolean)
       ),
     ],
+    emailVerification: {
+      sendOnSignUp: true,
+      sendVerificationEmail: async ({ user: recipient, url }) => {
+        await sendActionEmail({
+          to: recipient.email,
+          subject: "Verify your OpenWrite email",
+          body: `Hi ${recipient.name || "there"}, confirm your email address to finish setting up your OpenWrite account.`,
+          actionUrl: url,
+          actionLabel: "Verify email",
+        })
+      },
+    },
     emailAndPassword: {
       enabled: true,
+      sendResetPassword: async ({ user: recipient, url }) => {
+        await sendActionEmail({
+          to: recipient.email,
+          subject: "Reset your OpenWrite password",
+          body: `Hi ${recipient.name || "there"}, we received a request to reset the password for your OpenWrite account.`,
+          actionUrl: url,
+          actionLabel: "Reset password",
+        })
+      },
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,

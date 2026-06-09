@@ -6,6 +6,7 @@
   "routes": [{ "pattern": "openwrite.iliareingold.com", "custom_domain": true }],
   // Keep the legacy workers.dev URL serving existing users' bookmarks
   "workers_dev": true,
+  "send_email": [{ "name": "EMAIL" }],
   "assets": {
     "directory": "../web/dist",
     "binding": "ASSETS",
