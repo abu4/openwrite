@@ -20,6 +20,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import WriteHeader from "@/components/write-header"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { getActiveEditor } from "@/lib/active-editor"
 import { api } from "@/lib/api"
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -44,9 +45,11 @@ function WriteLayout() {
     }
   )
 
-  const handleInsertText = (_text: string) => {
-    // This would integrate with the TiptapEditor to insert text at cursor position
-    // TODO: Implement text insertion at cursor position
+  const handleInsertText = (text: string) => {
+    const editor = getActiveEditor()
+    if (editor) {
+      editor.chain().focus().insertContent(text).run()
+    }
   }
 
   // Fetch project details
@@ -123,13 +126,13 @@ function WriteLayout() {
                 <SheetTitle>AI Writing Assistant</SheetTitle>
                 <SheetDescription>AI-powered writing help and suggestions</SheetDescription>
               </SheetHeader>
-              <AIChatContent onInsertText={handleInsertText} />
+              <AIChatContent onInsertText={handleInsertText} projectId={projectId} />
             </SheetContent>
           </Sheet>
         ) : (
           rightSidebarOpen && (
             <div className="w-[18rem] border-l bg-background">
-              <AIChatContent onInsertText={handleInsertText} />
+              <AIChatContent onInsertText={handleInsertText} projectId={projectId} />
             </div>
           )
         )}

@@ -11,9 +11,11 @@ import { Selection } from "@tiptap/extensions"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
+import { useEffect } from "react"
 // --- Tiptap Node ---
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
+import { setActiveEditor } from "@/lib/active-editor"
 // import { CodeBlockButton } from "@/components/tiptap-ui/code-block-button"
 // COMMENTED OUT - ColorHighlightPopover causing popover close issues
 // import {
@@ -111,6 +113,12 @@ export default function TiptapEditor({
       },
     },
   })
+
+  // Expose the editor so the AI sidebar can insert text at the cursor
+  useEffect(() => {
+    setActiveEditor(editor)
+    return () => setActiveEditor(null)
+  }, [editor])
 
   if (!editor) {
     return <div className="animate-pulse">Loading editor...</div>

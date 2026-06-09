@@ -1,10 +1,13 @@
-import { Bot, Send, User } from "lucide-react"
+import { useMutation } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import { Bot, Send, Settings, User } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { ApiError, aiApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
 interface Message {
@@ -16,31 +19,11 @@ interface Message {
 
 interface AIChatContentProps {
   onInsertText?: (text: string) => void
+  projectId?: string
 }
 
-// Hardcoded demo responses for different types of writing assistance
-const DEMO_RESPONSES = {
-  character: [
-    "Let me help you develop this character. What's their main motivation in this scene?",
-    "I notice this character could use more depth. Consider adding a specific mannerism or speech pattern that makes them unique.",
-    "This character's dialogue feels authentic. You might want to show their internal conflict through their actions rather than just their words.",
-  ],
-  plot: [
-    "This plot point has great potential. Have you considered how it connects to your character's arc?",
-    "To heighten the tension here, try introducing an unexpected obstacle that forces your protagonist to make a difficult choice.",
-    "This scene could benefit from raising the stakes. What does your character stand to lose if they fail here?",
-  ],
-  style: [
-    "Your prose has a nice rhythm. Consider varying your sentence length to create more dynamic pacing.",
-    "This description is vivid. You might want to engage more senses beyond just visual details.",
-    "Strong dialogue! The subtext comes through clearly. Consider adding a beat of action to break up the conversation.",
-  ],
-  general: [
-    "This is a compelling scene. What aspect would you like me to help you develop further?",
-    "I can help you brainstorm ideas, develop characters, plot points, or refine your writing style. What would be most helpful?",
-    "Your writing shows promise. Would you like suggestions on pacing, character development, or world-building?",
-  ],
-}
+// Cap the history sent to the model to keep requests small
+const MAX_HISTORY_MESSAGES = 12
 
 const PROMPT_SUGGESTIONS = [
   "Help me develop this character",
@@ -51,10 +34,11 @@ const PROMPT_SUGGESTIONS = [
   "What's missing from this scene?",
 ]
 
-export function AIChatContent({ onInsertText }: AIChatContentProps) {
+export function AIChatContent({ onInsertText, projectId }: AIChatContentProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
+  const [needsProvider, setNeedsProvider] = useState(false)
+  const [errorText, setErrorText] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -68,29 +52,35 @@ export function AIChatContent({ onInsertText }: AIChatContentProps) {
     }
   }, [messages, scrollToBottom])
 
-  const getRandomResponse = (userInput: string): string => {
-    const lowerInput = userInput.toLowerCase()
+  const chatMutation = useMutation({
+    mutationFn: async (history: Message[]) =>
+      await aiApi.chat({
+        messages: history
+          .slice(-MAX_HISTORY_MESSAGES)
+          .map((message) => ({ role: message.role, content: message.content })),
+        projectId,
+      }),
+    onSuccess: (response) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          content: response.message,
+          role: "assistant",
+          timestamp: new Date(),
+        },
+      ])
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === "no_provider") {
+        setNeedsProvider(true)
+        return
+      }
+      setErrorText(error instanceof Error ? error.message : "Something went wrong")
+    },
+  })
 
-    if (lowerInput.includes("character") || lowerInput.includes("dialogue")) {
-      return DEMO_RESPONSES.character[Math.floor(Math.random() * DEMO_RESPONSES.character.length)]
-    }
-    if (
-      lowerInput.includes("plot") ||
-      lowerInput.includes("story") ||
-      lowerInput.includes("scene")
-    ) {
-      return DEMO_RESPONSES.plot[Math.floor(Math.random() * DEMO_RESPONSES.plot.length)]
-    }
-    if (
-      lowerInput.includes("style") ||
-      lowerInput.includes("writing") ||
-      lowerInput.includes("prose")
-    ) {
-      return DEMO_RESPONSES.style[Math.floor(Math.random() * DEMO_RESPONSES.style.length)]
-    }
-
-    return DEMO_RESPONSES.general[Math.floor(Math.random() * DEMO_RESPONSES.general.length)]
-  }
+  const isTyping = chatMutation.isPending
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -99,31 +89,17 @@ export function AIChatContent({ onInsertText }: AIChatContentProps) {
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       content: input.trim(),
       role: "user",
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    const nextMessages = [...messages, userMessage]
+    setMessages(nextMessages)
     setInput("")
-    setIsTyping(true)
-
-    // Simulate AI response delay
-    setTimeout(
-      () => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: getRandomResponse(input),
-          role: "assistant",
-          timestamp: new Date(),
-        }
-
-        setMessages((prev) => [...prev, assistantMessage])
-        setIsTyping(false)
-      },
-      1000 + Math.random() * 1500
-    ) // Random delay between 1-2.5 seconds
+    setErrorText(null)
+    chatMutation.mutate(nextMessages)
   }
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -133,6 +109,24 @@ export function AIChatContent({ onInsertText }: AIChatContentProps) {
 
   const handleInsertToEditor = (text: string) => {
     onInsertText?.(text)
+  }
+
+  if (needsProvider) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+        <div className="mb-3 w-fit rounded-full bg-muted p-3">
+          <Settings className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h3 className="mb-2 font-semibold text-sm">Connect an AI provider</h3>
+        <p className="mb-4 text-muted-foreground text-sm">
+          The writing assistant uses your own AI provider account (OpenRouter, OpenAI, Anthropic,
+          Ollama, and more). Connect one to start chatting.
+        </p>
+        <Button asChild size="sm">
+          <Link to="/dashboard/ai">Set up AI provider</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -247,6 +241,7 @@ export function AIChatContent({ onInsertText }: AIChatContentProps) {
 
       {/* Input Area */}
       <div className="p-4">
+        {errorText && <p className="mb-2 text-destructive text-xs">{errorText}</p>}
         <form className="flex gap-2" onSubmit={handleSubmit}>
           <Input
             className="flex-1"

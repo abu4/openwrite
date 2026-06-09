@@ -3,14 +3,11 @@ import { AutocompleteToggle } from "@/components/autocomplete-toggle"
 import { Separator } from "@/components/ui/separator"
 
 interface StatusBarProps {
-  lastSavedText?: string
+  lastSavedText: string
   wordCount: number
 }
 
-export function StatusBar({
-  wordCount,
-  lastSavedText = "Last saved: 2 minutes ago",
-}: StatusBarProps) {
+export function StatusBar({ wordCount, lastSavedText }: StatusBarProps) {
   const [currentTime, setCurrentTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   )

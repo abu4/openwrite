@@ -5,6 +5,9 @@
  * Import specific clients or the entire API object as needed.
  */
 
+export type { AiChatMessage, AiChatRequest, AiChatResponse } from "./ai"
+// AI Chat API
+export { aiApi } from "./ai"
 export type {
   AiProvider,
   AiProviderDetails,
@@ -15,7 +18,7 @@ export type {
 // AI Providers API
 export { aiProvidersApi } from "./ai-providers"
 export type { ApiClient, ApiRequestOptions } from "./base"
-export { apiCall } from "./base"
+export { ApiError, apiCall } from "./base"
 export type {
   Character,
   CreateCharacterData,
@@ -23,6 +26,9 @@ export type {
 } from "./characters"
 // Characters API
 export { charactersApi, createCharacterApi } from "./characters"
+export type { ProjectContent, SaveContentResult } from "./content"
+// Writing content API
+export { contentApi } from "./content"
 export type {
   ConnectionType,
   CreateGraphConnectionData,
@@ -72,8 +78,10 @@ export type {
 // Project API (formerly Novel API)
 export { novelApi, projectApi } from "./projects"
 
+import { aiApi } from "./ai"
 import { aiProvidersApi } from "./ai-providers"
 import { charactersApi } from "./characters"
+import { contentApi } from "./content"
 import { graphApi } from "./graph"
 import { locationsApi } from "./locations"
 import { loreApi } from "./lore"
@@ -90,7 +98,9 @@ import { novelApi, projectApi } from "./projects"
 export const api = {
   projects: projectApi,
   novels: novelApi, // Legacy support
+  ai: aiApi,
   aiProviders: aiProvidersApi,
+  content: contentApi,
   characters: charactersApi,
   locations: locationsApi,
   lore: loreApi,

@@ -3,7 +3,9 @@ import { type Context, Hono } from "hono"
 import { db } from "../db"
 import { character, location, lore, member, organization, plotPoint, project } from "../db/schema"
 import { requireAuth, verifyProjectAccess } from "../middleware/auth"
+import { aiRouter } from "./ai"
 import { aiProvidersRouter } from "./ai-providers"
+import { contentRouter } from "./content"
 import graphRouter from "./graph"
 
 interface Env {
@@ -981,6 +983,12 @@ router.delete(
 
 // Mount AI providers router
 router.route("/ai-providers", aiProvidersRouter)
+
+// Mount AI chat router
+router.route("/ai", aiRouter)
+
+// Mount writing content router
+router.route("/", contentRouter)
 
 // Mount graph router
 router.route("/", graphRouter)
