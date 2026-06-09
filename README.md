@@ -1,82 +1,110 @@
 # OpenWrite
 
-**AI-powered writing platform for novelists & screenwriters. ✨📝**
+**Open-source, AI-powered writing platform for novelists, screenwriters, and creative writers. ✨📝**
 
-OpenWrite is a comprehensive writing platform that empowers authors to write better stories faster. It combines intelligent AI assistance with powerful organization tools to help you plan, write, and collaborate on your creative projects.
+OpenWrite helps you plan, organize, and write long-form fiction — with an AI assistant that runs on **your own API keys**. No subscription, no markup on tokens, no lock-in. Your manuscript lives in your database (or ours, or one you self-host).
 
-## What OpenWrite Does
+**Try it:** [openwrite.ilia-reingold.workers.dev](https://openwrite.ilia-reingold.workers.dev)
 
-OpenWrite is a comprehensive AI-powered writing platform that transforms how authors create and structure their stories. The platform features a rich text editor with intelligent AI assistance that understands your characters, plot, and writing style, offering contextual suggestions as you write. The standout Story Canvas provides an interactive visual workspace where you can drag and drop story elements—from high-level acts and chapters down to individual scenes and beats—and connect them to map your narrative flow. Each story element can be detailed with goals, conflicts, character involvement, and thematic connections, creating a living blueprint of your work.
+## What works today
 
-The platform integrates multiple AI providers (OpenAI, Anthropic, Claude, and local models) directly into the writing experience, while robust organization tools help manage character databases, locations, and world-building through the Codex system. Real-time collaboration features enable teams to work together with live editing and version control, while built-in analytics track writing progress, word counts, and productivity patterns.
+- ✍️ **Rich text editor with auto-save** — a distraction-light Tiptap editor that persists your manuscript as you type, with live word counts and per-project progress tracking
+- 🤖 **AI writing assistant (bring your own key)** — chat with an assistant that knows your project's title, genre, and characters, then insert its suggestions straight into your manuscript. Supported providers:
+  - OpenRouter (one key, hundreds of models — easiest start)
+  - OpenAI, Anthropic, Groq, Gemini, Cohere
+  - Ollama (fully local models, fully private)
+- 📚 **Codex** — structured world-building: characters, locations, lore entries, and plot points, organized per project
+- 🗂️ **Projects** — novels, trilogies, series, short story collections, screenplays; genre, status, and target word count tracking
+- 🔐 **Auth & workspaces** — email/password accounts with personal workspaces; API keys are encrypted at rest (AES-GCM)
 
-OpenWrite combines the best features of Sudowrite and NovelCrafter into a single, powerful, and fully open-source platform. Built with a modern TypeScript stack including React, TanStack Router, Hono, a type-safe REST API, and more.
+## In progress
 
-## Features
+| Feature | Status |
+| --- | --- |
+| Chapter & scene management | Planned next |
+| Streaming AI responses | Planned next |
+| Manuscript export (Markdown / DOCX / EPUB) | Planned |
+| Story canvas (visual plotting) | Experimental |
+| Real-time collaboration | Designed, not built |
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Hono** - Lightweight, performant server framework
-- **REST API** – Type-safe endpoints with OpenAPI integration
-- **workers** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Authentication** - Email & password authentication with Better Auth
-- **Turborepo** - Optimized monorepo build system
+Found a bug or want to influence what gets built? [Open an issue](https://github.com/ilrein/openwrite/issues).
 
-## Getting Started
+## Why OpenWrite
 
-First, install the dependencies:
+- **Your keys, your costs.** Tools like Sudowrite resell AI tokens at a markup. OpenWrite talks to providers directly with your key — you pay provider rates, or nothing at all with local Ollama models.
+- **Your words, your data.** AGPL-3.0 licensed and self-hostable on Cloudflare's free tier. No training on your manuscript, no vendor holding your novel hostage.
+- **Built for fiction.** Characters, lore, and plot structure are first-class concepts, not folders of notes.
+
+## Tech stack
+
+TypeScript end to end: React 19 + TanStack Router + TailwindCSS/shadcn-ui on the front, Hono on Cloudflare Workers with D1 (SQLite) + Drizzle ORM on the back, Better Auth for authentication, Turborepo for the monorepo.
+
+## Getting started
 
 ```bash
 bun install
 ```
-## Database Setup
 
-This project uses SQLite with Drizzle ORM.
+### Database setup
 
-1. Start the local SQLite database:
-Local development for a Cloudflare D1 database will already be running as part of the `wrangler dev` command.
+This project uses Cloudflare D1 (SQLite) with Drizzle ORM. Local development runs against a local D1 instance managed by `wrangler dev`.
 
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
+1. Copy the example environment file and fill in the values (any random strings work locally):
 
-3. Apply the schema to your database:
+```bash
+cp apps/server/.dev.vars.example apps/server/.dev.vars
+```
+
+`apps/server/.dev.vars` needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN`, and `ENCRYPTION_KEY` (a base64-encoded 32-byte key, e.g. `openssl rand -base64 32`).
+
+2. Apply the schema:
+
 ```bash
 bun db:push
 ```
 
-
-Then, run the development server:
+### Run it
 
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3001](http://localhost:3001) for the web app. The API runs at [http://localhost:3000](http://localhost:3000).
 
+## Self-hosting
 
+OpenWrite deploys as a single Cloudflare Worker (API + static frontend) backed by a D1 database — comfortably within Cloudflare's free tier for personal use:
 
-## Project Structure
+```bash
+wrangler d1 create your-database        # then update apps/server/wrangler.jsonc
+wrangler secret put BETTER_AUTH_SECRET  # plus BETTER_AUTH_URL, CORS_ORIGIN, ENCRYPTION_KEY
+bun run deploy
+```
+
+## Project structure
 
 ```
 openwrite/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Hono-based REST API server
+│   ├── web/         # Frontend (React + TanStack Router)
+│   ├── server/      # Hono REST API on Cloudflare Workers
+│   └── docs/        # VitePress documentation
 ```
 
-## Available Scripts
+## Available scripts
 
-- `bun dev`: Start all applications in development mode
-- `bun build`: Build all applications
-- `bun dev:web`: Start only the web application
-- `bun dev:server`: Start only the server
-- `bun check-types`: Check TypeScript types across all apps
-- `bun db:push`: Push schema changes to database
-- `bun db:studio`: Open database studio UI
-- `cd apps/server && bun db:local`: Start the local SQLite database
+- `bun dev` — start all applications in development mode
+- `bun build` — build all applications
+- `bun dev:web` / `bun dev:server` — start a single app
+- `bun quality` — type checking + linting (run before committing)
+- `bun db:push` — push schema changes to the database
+- `bun db:studio` — open the Drizzle Studio database UI
+- `bun run deploy` — build and deploy to Cloudflare
 
-### Ilia was here!
+## Contributing
+
+Issues and PRs are welcome — the roadmap above is a good place to start, and the codebase is small enough to learn in an afternoon. Run `bun quality` before submitting.
+
+## License
+
+[AGPL-3.0](LICENSE.md)

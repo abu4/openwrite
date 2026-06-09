@@ -11,6 +11,10 @@ BETTER_AUTH_URL="http://localhost:3000"
 # Environment mode
 NODE_ENV="development"
 
+# Encryption key for AI provider API keys stored in the database - REQUIRED
+# Generate with: openssl rand -base64 32
+ENCRYPTION_KEY="generate-a-base64-32-byte-key"
+
 # NOTE: AI Provider API keys are NOT configured here!
 # They are configured through the web application UI at:
 # Dashboard → AI Providers
