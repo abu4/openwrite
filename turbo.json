@@ -45,6 +45,16 @@
       "dependsOn": ["build"],
       "cache": false
     },
+    "deploy:server": {
+      "dependsOn": ["@openwrite/server#deploy"],
+      "cache": false
+    },
+    "@openwrite/server#deploy": {
+      "dependsOn": ["@openwrite/web#build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "apps/web/dist/**"],
+      "outputs": [],
+      "cache": false
+    },
     "docs:dev": {
       "cache": false,
       "persistent": true

@@ -28,13 +28,14 @@
     "db:push": "turbo -F @openwrite/server db:push",
     "db:studio": "turbo -F @openwrite/server db:studio",
     "db:generate": "turbo -F @openwrite/server db:generate",
-    "db:migrate": "turbo -F @openwrite/server db:migrate"
+    "db:migrate": "turbo -F @openwrite/server db:migrate",
+    "deploy": "turbo build && turbo -F @openwrite/server deploy"
   },
   "dependencies": {},
   "devDependencies": {
-    "@biomejs/biome": "^2.1.2",
-    "turbo": "^2.5.5",
-    "ultracite": "^5.1.1"
+    "@biomejs/biome": "^2.4.16",
+    "turbo": "^2.9.16",
+    "ultracite": "^7.8.2"
   },
-  "packageManager": "bun@1.2.19"
+  "packageManager": "bun@1.3.14"
 }
