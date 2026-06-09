@@ -36,6 +36,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { NodeWritingPanel } from "@/components/node-writing-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -223,6 +224,39 @@ const initialNodes: StoryNode[] = []
 
 const initialEdges: Edge[] = []
 
+// Visual styling per connection type
+const CONNECTION_EDGE_STYLES: Record<
+  ConnectionType,
+  { stroke: string; animated: boolean; label?: string }
+> = {
+  story_flow: { stroke: "#64748b", animated: true },
+  character_arc: { stroke: "#3b82f6", animated: false, label: "character" },
+  setting: { stroke: "#22c55e", animated: false, label: "setting" },
+  thematic: { stroke: "#a855f7", animated: false, label: "lore" },
+  plot_thread: { stroke: "#ef4444", animated: false, label: "thread" },
+  reference: { stroke: "#94a3b8", animated: false },
+}
+
+// Infer the semantic connection type from the two endpoint node types
+function inferConnectionType(source: GraphNodeType, target: GraphNodeType): ConnectionType {
+  if (source === "story_element" && target === "story_element") {
+    return "story_flow"
+  }
+  if (source === "character" || target === "character") {
+    return "character_arc"
+  }
+  if (source === "location" || target === "location") {
+    return "setting"
+  }
+  if (source === "lore" || target === "lore") {
+    return "thematic"
+  }
+  if (source === "plot_thread" || target === "plot_thread") {
+    return "plot_thread"
+  }
+  return "reference"
+}
+
 // Main Canvas Component
 function StoryCanvas() {
   const { projectId } = Route.useParams()
@@ -243,6 +277,7 @@ function StoryCanvas() {
   const flowNodes = useMemo(() => {
     const flowNodeList = graphNodes.map((node) => {
       const visualProps = api.graph.parseVisualProperties(node.visualProperties)
+      const metadata = api.graph.parseMetadata(node.metadata) as Record<string, unknown>
       return {
         id: node.id,
         type: "storyNode",
@@ -257,9 +292,9 @@ function StoryCanvas() {
           size: visualProps.size || "medium",
           icon: visualProps.icon || "📝",
           shape: visualProps.shape || "rectangle",
-          goals: "", // These could come from metadata
-          conflict: "",
-          notes: "",
+          goals: typeof metadata.goals === "string" ? metadata.goals : "",
+          conflict: typeof metadata.conflict === "string" ? metadata.conflict : "",
+          notes: typeof metadata.notes === "string" ? metadata.notes : "",
           characters: [],
           themes: [],
           elementType: (node.subType as StoryElementType) || "scene",
@@ -273,13 +308,20 @@ function StoryCanvas() {
   // Convert graph connections to ReactFlow edges (memoized to prevent infinite loops)
   const flowEdges = useMemo(
     () =>
-      graphConnections.map((conn) => ({
-        id: conn.id,
-        source: conn.sourceNodeId,
-        target: conn.targetNodeId,
-        type: "smoothstep",
-        animated: true,
-      })),
+      graphConnections.map((conn) => {
+        const style =
+          CONNECTION_EDGE_STYLES[conn.connectionType] ?? CONNECTION_EDGE_STYLES.reference
+        return {
+          id: conn.id,
+          source: conn.sourceNodeId,
+          target: conn.targetNodeId,
+          type: "smoothstep",
+          animated: style.animated,
+          label: style.label,
+          style: { stroke: style.stroke, strokeWidth: 2 },
+          labelStyle: { fontSize: 10, fill: style.stroke },
+        }
+      }),
     [graphConnections]
   )
 
@@ -404,6 +446,7 @@ function StoryCanvas() {
           createConnectionMutation.mutate({
             sourceNodeId: sourceNode.data.graphNodeId,
             targetNodeId: targetNode.data.graphNodeId,
+            connectionType: inferConnectionType(sourceNode.data.nodeType, targetNode.data.nodeType),
           })
         }
       }
@@ -624,7 +667,7 @@ function StoryCanvas() {
     ]
   )
 
-  // Update selected node
+  // Update selected node (local React Flow state only)
   const updateSelectedNode = useCallback(
     (updates: Partial<StoryNodeData>) => {
       if (!selectedNode) {
@@ -640,6 +683,48 @@ function StoryCanvas() {
     },
     [selectedNode, setNodes]
   )
+
+  // Persist node detail edits to the API
+  const updateNodeMutation = useMutation({
+    mutationFn: async ({ nodeId, data }: { nodeId: string; data: StoryNodeData }) =>
+      await api.graph.updateNode(projectId, nodeId, {
+        title: data.label,
+        description: data.description,
+        visualProperties: api.graph.stringifyVisualProperties({
+          color: data.color,
+          size: data.size,
+          icon: data.icon,
+          shape: data.shape,
+        }),
+        metadata: api.graph.stringifyMetadata({
+          goals: data.goals,
+          conflict: data.conflict,
+          notes: data.notes,
+        }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graph-nodes", projectId] })
+    },
+    onError: () => {
+      toast.error("Failed to save changes")
+    },
+  })
+
+  // Save the selected node's current detail fields (call on blur / select change)
+  const persistNodeData = useCallback(
+    (data: StoryNodeData) => {
+      if (data.graphNodeId) {
+        updateNodeMutation.mutate({ nodeId: data.graphNodeId, data })
+      }
+    },
+    [updateNodeMutation]
+  )
+
+  const persistSelectedNode = useCallback(() => {
+    if (selectedNode) {
+      persistNodeData(selectedNode.data)
+    }
+  }, [selectedNode, persistNodeData])
 
   // Delete selected node
   const deleteSelectedNode = useCallback(() => {
@@ -807,13 +892,22 @@ function StoryCanvas() {
 
               <div className="px-2">
                 <Tabs className="w-full" defaultValue="overview">
-                  <TabsList className="grid h-12 w-full grid-cols-3">
+                  <TabsList
+                    className={`grid h-12 w-full ${
+                      selectedNode.data.nodeType === "story_element" ? "grid-cols-4" : "grid-cols-3"
+                    }`}
+                  >
                     <TabsTrigger className="text-sm" value="overview">
                       Overview
                     </TabsTrigger>
                     <TabsTrigger className="text-sm" value="story">
                       Story
                     </TabsTrigger>
+                    {selectedNode.data.nodeType === "story_element" && (
+                      <TabsTrigger className="text-sm" value="writing">
+                        Writing
+                      </TabsTrigger>
+                    )}
                     <TabsTrigger className="text-sm" value="connections">
                       Links
                     </TabsTrigger>
@@ -827,6 +921,7 @@ function StoryCanvas() {
                       <Input
                         className="h-11"
                         id="title"
+                        onBlur={persistSelectedNode}
                         onChange={(e) => updateSelectedNode({ label: e.target.value })}
                         value={selectedNode.data.label}
                       />
@@ -839,6 +934,7 @@ function StoryCanvas() {
                       <Textarea
                         className="min-h-[90px] resize-none"
                         id="description"
+                        onBlur={persistSelectedNode}
                         onChange={(e) => updateSelectedNode({ description: e.target.value })}
                         placeholder="Describe this story element..."
                         rows={3}
@@ -851,7 +947,10 @@ function StoryCanvas() {
                         Color Theme
                       </Label>
                       <Select
-                        onValueChange={(color) => updateSelectedNode({ color })}
+                        onValueChange={(color) => {
+                          updateSelectedNode({ color })
+                          persistNodeData({ ...selectedNode.data, color })
+                        }}
                         value={selectedNode.data.color}
                       >
                         <SelectTrigger className="h-11">
@@ -878,6 +977,7 @@ function StoryCanvas() {
                       <Textarea
                         className="min-h-[80px] resize-none"
                         id="goals"
+                        onBlur={persistSelectedNode}
                         onChange={(e) => updateSelectedNode({ goals: e.target.value })}
                         placeholder="What does the character want to achieve in this part?"
                         rows={3}
@@ -892,6 +992,7 @@ function StoryCanvas() {
                       <Textarea
                         className="min-h-[80px] resize-none"
                         id="conflict"
+                        onBlur={persistSelectedNode}
                         onChange={(e) => updateSelectedNode({ conflict: e.target.value })}
                         placeholder="What obstacles, challenges, or tensions arise?"
                         rows={3}
@@ -906,6 +1007,7 @@ function StoryCanvas() {
                       <Textarea
                         className="min-h-[100px] resize-none"
                         id="notes"
+                        onBlur={persistSelectedNode}
                         onChange={(e) => updateSelectedNode({ notes: e.target.value })}
                         placeholder="Additional notes, inspiration, and creative ideas..."
                         rows={4}
@@ -914,21 +1016,61 @@ function StoryCanvas() {
                     </div>
                   </TabsContent>
 
+                  {selectedNode.data.nodeType === "story_element" && (
+                    <TabsContent className="px-1" value="writing">
+                      <NodeWritingPanel
+                        nodeId={selectedNode.data.graphNodeId}
+                        projectId={projectId}
+                      />
+                    </TabsContent>
+                  )}
+
                   <TabsContent className="space-y-5 px-1" value="connections">
                     <div className="space-y-2">
-                      <Label className="font-medium text-sm">Connected Characters</Label>
-                      <div className="rounded-lg border bg-muted/20 p-3 text-muted-foreground text-sm">
-                        Character connections will be available soon. You'll be able to link
-                        characters to specific story elements.
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="font-medium text-sm">Related Themes</Label>
-                      <div className="rounded-lg border bg-muted/20 p-3 text-muted-foreground text-sm">
-                        Theme connections will be available soon. Track how themes develop across
-                        your story structure.
-                      </div>
+                      <Label className="font-medium text-sm">Connected Elements</Label>
+                      {graphConnections.filter(
+                        (conn) =>
+                          conn.sourceNodeId === selectedNode.data.graphNodeId ||
+                          conn.targetNodeId === selectedNode.data.graphNodeId
+                      ).length === 0 ? (
+                        <div className="rounded-lg border bg-muted/20 p-3 text-muted-foreground text-sm">
+                          No connections yet. Drag from a node's bottom handle to another node's top
+                          handle to link them — connections feed AI draft generation.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {graphConnections
+                            .filter(
+                              (conn) =>
+                                conn.sourceNodeId === selectedNode.data.graphNodeId ||
+                                conn.targetNodeId === selectedNode.data.graphNodeId
+                            )
+                            .map((conn) => {
+                              const isOutgoing = conn.sourceNodeId === selectedNode.data.graphNodeId
+                              const otherId = isOutgoing ? conn.targetNodeId : conn.sourceNodeId
+                              const other = graphNodes.find((n) => n.id === otherId)
+                              return (
+                                <div
+                                  className="flex items-center justify-between rounded-lg border bg-background p-2.5"
+                                  key={conn.id}
+                                >
+                                  <div className="min-w-0">
+                                    <div className="truncate font-medium text-sm">
+                                      {isOutgoing ? "→ " : "← "}
+                                      {other?.title ?? "Unknown node"}
+                                    </div>
+                                    <div className="text-muted-foreground text-xs">
+                                      {other?.nodeType.replace("_", " ")}
+                                    </div>
+                                  </div>
+                                  <Badge className="ml-2 shrink-0 text-xs" variant="outline">
+                                    {conn.connectionType.replace("_", " ")}
+                                  </Badge>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">

@@ -310,6 +310,96 @@ async function dispatchToProvider(options: {
   }
 }
 
+interface CompletionFailure {
+  code?: "no_provider"
+  error: string
+  status: 412 | 500 | 502
+}
+
+interface CompletionSuccess {
+  message: string
+  model: string | null
+  provider: string
+}
+
+type CompletionResult = CompletionSuccess | CompletionFailure
+
+function isCompletionFailure(result: CompletionResult): result is CompletionFailure {
+  return "status" in result
+}
+
+// Resolve the user's provider, decrypt the key, dispatch, and track usage
+async function runCompletionForUser(options: {
+  userId: string
+  env: Env
+  system: string
+  messages: ChatMessage[]
+  model?: string
+}): Promise<CompletionResult> {
+  const providers = await db
+    .select({
+      id: aiProvider.id,
+      provider: aiProvider.provider,
+      apiKey: aiProvider.apiKey,
+      isDefault: aiProvider.isDefault,
+      providerConfig: aiProvider.providerConfig,
+      currentUsage: aiProvider.currentUsage,
+    })
+    .from(aiProvider)
+    .where(and(eq(aiProvider.userId, options.userId), eq(aiProvider.isActive, true)))
+    .orderBy(asc(aiProvider.createdAt))
+
+  const selected = providers.find((p) => p.isDefault) ?? providers.at(0)
+
+  if (!selected) {
+    return {
+      error: "No AI provider configured. Connect one in Dashboard → AI.",
+      code: "no_provider",
+      status: 412,
+    }
+  }
+
+  let apiKey: string | null = null
+  if (selected.apiKey) {
+    try {
+      apiKey = await decryptApiKey(selected.apiKey, options.env)
+    } catch {
+      return {
+        error: "Failed to decrypt the stored API key. Try re-connecting the provider.",
+        status: 500,
+      }
+    }
+  }
+
+  try {
+    const result = await dispatchToProvider({
+      provider: selected.provider,
+      apiKey,
+      providerConfig: parseProviderConfig(selected.providerConfig),
+      model: options.model,
+      system: options.system,
+      messages: options.messages,
+    })
+
+    if (result.error || !result.message) {
+      return { error: result.error ?? "Provider returned no content", status: 502 }
+    }
+
+    await db
+      .update(aiProvider)
+      .set({ lastUsedAt: new Date(), currentUsage: (selected.currentUsage ?? 0) + 1 })
+      .where(eq(aiProvider.id, selected.id))
+
+    return {
+      message: result.message,
+      provider: selected.provider,
+      model: result.model ?? null,
+    }
+  } catch {
+    return { error: "Failed to reach the AI provider", status: 502 }
+  }
+}
+
 const aiRouter = new Hono<{ Bindings: Env; Variables: Variables }>()
 
 aiRouter.post("/chat", requireAuth, async (c: AppContext) => {
@@ -328,74 +418,26 @@ aiRouter.post("/chat", requireAuth, async (c: AppContext) => {
     return c.json({ error: "messages must be a non-empty list ending with a user message" }, 400)
   }
 
-  // Pick the user's default active provider, falling back to any active one
-  const providers = await db
-    .select({
-      id: aiProvider.id,
-      provider: aiProvider.provider,
-      apiKey: aiProvider.apiKey,
-      isDefault: aiProvider.isDefault,
-      providerConfig: aiProvider.providerConfig,
-      currentUsage: aiProvider.currentUsage,
-    })
-    .from(aiProvider)
-    .where(and(eq(aiProvider.userId, user.id), eq(aiProvider.isActive, true)))
-    .orderBy(asc(aiProvider.createdAt))
-
-  const selected = providers.find((p) => p.isDefault) ?? providers.at(0)
-
-  if (!selected) {
-    return c.json(
-      {
-        error: "No AI provider configured. Connect one in Dashboard → AI.",
-        code: "no_provider",
-      },
-      412
-    )
-  }
-
-  let apiKey: string | null = null
-  if (selected.apiKey) {
-    try {
-      apiKey = await decryptApiKey(selected.apiKey, c.env)
-    } catch {
-      return c.json(
-        { error: "Failed to decrypt the stored API key. Try re-connecting the provider." },
-        500
-      )
-    }
-  }
-
   const projectId = typeof body.projectId === "string" ? body.projectId : undefined
   const system = await buildSystemPrompt(projectId, activeOrganization?.id ?? "")
 
-  try {
-    const result = await dispatchToProvider({
-      provider: selected.provider,
-      apiKey,
-      providerConfig: parseProviderConfig(selected.providerConfig),
-      model: typeof body.model === "string" ? body.model : undefined,
-      system,
-      messages,
-    })
+  const result = await runCompletionForUser({
+    userId: user.id,
+    env: c.env,
+    system,
+    messages,
+    model: typeof body.model === "string" ? body.model : undefined,
+  })
 
-    if (result.error || !result.message) {
-      return c.json({ error: result.error ?? "Provider returned no content" }, 502)
-    }
-
-    await db
-      .update(aiProvider)
-      .set({ lastUsedAt: new Date(), currentUsage: (selected.currentUsage ?? 0) + 1 })
-      .where(eq(aiProvider.id, selected.id))
-
-    return c.json({
-      message: result.message,
-      provider: selected.provider,
-      model: result.model ?? null,
-    })
-  } catch {
-    return c.json({ error: "Failed to reach the AI provider" }, 502)
+  if (isCompletionFailure(result)) {
+    return c.json(
+      { error: result.error, ...(result.code ? { code: result.code } : {}) },
+      result.status
+    )
   }
+
+  return c.json(result)
 })
 
-export { aiRouter }
+export type { ChatMessage, CompletionResult }
+export { aiRouter, isCompletionFailure, runCompletionForUser }

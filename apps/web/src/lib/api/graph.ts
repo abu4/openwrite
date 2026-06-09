@@ -148,11 +148,6 @@ export const createTextBlockApi = (projectId: string) => ({
     return Array.isArray(response.textBlocks) ? response.textBlocks : []
   },
 
-  get(_id: string): Promise<TextBlock> {
-    // Note: Individual text block GET would need to be implemented in backend
-    throw new Error("Individual text block GET not implemented yet")
-  },
-
   async create(data: CreateTextBlockData): Promise<TextBlock | { success: boolean; id: string }> {
     return await apiCall(`/api/projects/${projectId}/graph/nodes/${data.storyNodeId}/text-blocks`, {
       method: "POST",
@@ -160,14 +155,27 @@ export const createTextBlockApi = (projectId: string) => ({
     })
   },
 
-  update(_id: string, _data: UpdateTextBlockData): Promise<{ success: boolean }> {
-    // Note: Text block update would need to be implemented in backend
-    throw new Error("Text block update not implemented yet")
+  async update(
+    storyNodeId: string,
+    blockId: string,
+    data: { content?: string; orderIndex?: number }
+  ): Promise<{ success: boolean; wordCount: number }> {
+    return await apiCall(
+      `/api/projects/${projectId}/graph/nodes/${storyNodeId}/text-blocks/${blockId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    )
   },
 
-  delete(_id: string): Promise<{ success: boolean }> {
-    // Note: Text block delete would need to be implemented in backend
-    throw new Error("Text block delete not implemented yet")
+  async delete(storyNodeId: string, blockId: string): Promise<{ success: boolean }> {
+    return await apiCall(
+      `/api/projects/${projectId}/graph/nodes/${storyNodeId}/text-blocks/${blockId}`,
+      {
+        method: "DELETE",
+      }
+    )
   },
 })
 
@@ -255,6 +263,31 @@ export const graphApi = {
     createTextBlockApi(projectId).list(storyNodeId),
   createTextBlock: (projectId: string, data: CreateTextBlockData) =>
     createTextBlockApi(projectId).create(data),
+  updateTextBlock: (
+    projectId: string,
+    storyNodeId: string,
+    blockId: string,
+    data: { content?: string; orderIndex?: number }
+  ) => createTextBlockApi(projectId).update(storyNodeId, blockId, data),
+  deleteTextBlock: (projectId: string, storyNodeId: string, blockId: string) =>
+    createTextBlockApi(projectId).delete(storyNodeId, blockId),
+
+  generateDraft: async (
+    projectId: string,
+    nodeId: string,
+    data: { instructions?: string; model?: string } = {}
+  ): Promise<{
+    success: boolean
+    blockId: string
+    content: string
+    wordCount: number
+    provider: string
+    model: string | null
+  }> =>
+    await apiCall(`/api/projects/${projectId}/graph/nodes/${nodeId}/generate`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Utility functions for working with graph data
   parseVisualProperties: (visualProps?: string) => {
