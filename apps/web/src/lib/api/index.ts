@@ -20,6 +20,13 @@ export { aiProvidersApi } from "./ai-providers"
 export type { ApiClient, ApiRequestOptions } from "./base"
 export { ApiError, apiCall } from "./base"
 export type {
+  Chapter,
+  ChapterContent,
+  SaveChapterContentResult,
+} from "./chapters"
+// Chapters API
+export { chaptersApi } from "./chapters"
+export type {
   Character,
   CreateCharacterData,
   UpdateCharacterData,
@@ -80,6 +87,7 @@ export { novelApi, projectApi } from "./projects"
 
 import { aiApi } from "./ai"
 import { aiProvidersApi } from "./ai-providers"
+import { chaptersApi } from "./chapters"
 import { charactersApi } from "./characters"
 import { contentApi } from "./content"
 import { graphApi } from "./graph"
@@ -100,6 +108,7 @@ export const api = {
   novels: novelApi, // Legacy support
   ai: aiApi,
   aiProviders: aiProvidersApi,
+  chapters: chaptersApi,
   content: contentApi,
   characters: charactersApi,
   locations: locationsApi,

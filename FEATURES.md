@@ -22,9 +22,11 @@ Ordered by priority within each section. Items marked `[x]` are live in producti
 The set that lets a NovelCrafter/Word user actually switch.
 
 - [ ] **Chapters & scenes manuscript structure** (issue #70)
-  - [ ] Chapter/scene CRUD API on the existing work→chapter schema
-  - [ ] Sidebar tree in the write page: create, rename, reorder, delete
-  - [ ] Per-chapter/scene word counts; project total = sum
+  - [x] Chapter CRUD + reorder API on the existing work→chapter schema
+  - [x] Chapter sidebar in the write page: create, rename, reorder, delete
+  - [x] Per-chapter word counts; project total = sum of chapters
+  - [x] Per-chapter auto-save with flush on chapter switch
+  - [ ] Scene level within chapters
   - [ ] Grid/plan view: drag-and-drop acts → chapters → scenes
 - [ ] **Scene beats → prose** (reuse the canvas generation endpoint)
   - [ ] Beat field per scene ("what happens here")
