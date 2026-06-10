@@ -7,6 +7,19 @@
 const ALGORITHM = "AES-GCM"
 const IV_LENGTH = 12 // 96 bits for AES-GCM
 
+// Convert bytes to base64 in chunks. Never use TextDecoder("latin1") for this:
+// it decodes as windows-1252, mapping some bytes above U+00FF, which makes
+// btoa() throw "Invalid character" for roughly half of all random ciphertexts.
+const BASE64_CHUNK_SIZE = 0x80_00
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ""
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE))
+  }
+  return btoa(binary)
+}
+
 /**
  * Get or create the encryption key from environment
  */
@@ -53,9 +66,7 @@ export async function encryptApiKey(
     combined.set(iv)
     combined.set(new Uint8Array(encrypted), iv.length)
 
-    // Use TextDecoder with latin1 to avoid stack overflow with large arrays
-    const decoder = new TextDecoder("latin1")
-    return btoa(decoder.decode(combined))
+    return bytesToBase64(combined)
   } catch (error) {
     throw new Error(
       `Failed to encrypt API key: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -111,9 +122,7 @@ export async function generateEncryptionKey(): Promise<string> {
   )
 
   const keyBuffer = await crypto.subtle.exportKey("raw", key)
-  // Use TextDecoder with latin1 to avoid stack overflow with large arrays
-  const decoder = new TextDecoder("latin1")
-  return btoa(decoder.decode(new Uint8Array(keyBuffer)))
+  return bytesToBase64(new Uint8Array(keyBuffer))
 }
 
 /**
@@ -125,7 +134,5 @@ export async function hashApiKey(apiKey: string): Promise<string> {
   const data = encoder.encode(apiKey)
   const hashBuffer = await crypto.subtle.digest("SHA-256", data)
   const hashArray = new Uint8Array(hashBuffer)
-  // Use TextDecoder with latin1 to avoid stack overflow with large arrays
-  const decoder = new TextDecoder("latin1")
-  return btoa(decoder.decode(hashArray)).slice(0, 32) // First 32 chars for identification
+  return bytesToBase64(hashArray).slice(0, 32) // First 32 chars for identification
 }

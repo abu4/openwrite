@@ -6,6 +6,8 @@
     "build": "wrangler deploy --dry-run",
     "check-types": "tsc --noEmit",
     "lint": "biome check src",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "format": "biome format --write .",
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "bunx wrangler types --env-interface CloudflareBindings; wrangler dev --port=3000 --local",
@@ -35,6 +37,7 @@
     "drizzle-kit": "^0.31.10",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
     "wrangler": "^4.99.0"
   }
 }

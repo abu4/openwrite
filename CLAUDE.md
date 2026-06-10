@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenWrite is a full-stack TypeScript application built with the Better-T-Stack, featuring a monorepo structure managed by Turborepo. This open-source AI-powered writing platform consists of three main applications:
+OpenWrite is a full-stack TypeScript application built with the Better-T-Stack, featuring a Bun-workspaces monorepo (mprocs orchestrates dev processes; see mprocs.yaml). This open-source AI-powered writing platform consists of three main applications:
 
 - **Web App** (`apps/web/`): React frontend with TanStack Router, TailwindCSS, and shadcn/ui components
 - **Server** (`apps/server/`): Hono-based REST server deployed on Cloudflare Workers  
@@ -75,7 +75,7 @@ The web application runs on http://localhost:3001 and the API on http://localhos
 
 ## Testing
 
-Type checking is the primary validation method. Run `bun check-types` before committing changes to ensure type safety across the full-stack application.
+Run `bun test` (Vitest, web + server suites) and `bun check-types` before committing. Add or extend tests alongside new features — pure logic (word counts, encryption, prompt building, type inference) should always have unit coverage.
 
 ## Claude Code Integration
 

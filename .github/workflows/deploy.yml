@@ -37,21 +37,13 @@ jobs:
         with:
           node-version: 22
 
-      - name: Cache turbo build setup
-        uses: actions/cache@v5
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
       - name: Install dependencies
         run: bun install
 
       - name: Type check all packages
         run: bun run check-types
 
-      - name: Build all packages with Turborepo
+      - name: Build all packages
         run: bun run build
 
       - name: Deploy Server to Production
@@ -120,7 +112,6 @@ jobs:
 
       - name: Print Deployment URL
         run: |
-          echo "🚀 Server deployed to: https://openwrite.${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.workers.dev"
+          echo "🚀 Server deployed to: https://openwrite.iliareingold.com"
           echo "📱 Includes both API and web app in a single Worker"
           echo "📚 Documentation deployment attempted"
-          echo "🎯 Built with Turborepo for optimized caching and performance"

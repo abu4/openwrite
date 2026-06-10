@@ -20,14 +20,14 @@ import { readFileSync, writeFileSync } from "node:fs"
 // Check if wrangler is available
 try {
   execSync("npx wrangler --version", { stdio: "pipe" })
-} catch (_error) {
+} catch {
   execSync("npm install -g wrangler", { stdio: "inherit" })
 }
 
 // Check if user is logged in to Cloudflare
 try {
   execSync("npx wrangler whoami", { stdio: "pipe" })
-} catch (_error) {
+} catch {
   execSync("npx wrangler login", { stdio: "inherit" })
 }
 const dbOutput = execSync("npx wrangler d1 create openwrite-us-east-1", {
@@ -83,6 +83,6 @@ try {
     stdio: "inherit",
     cwd: "./apps/server",
   })
-} catch (_error) {
+} catch {
   process.exit(1)
 }

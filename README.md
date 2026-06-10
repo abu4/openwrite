@@ -37,7 +37,7 @@ Found a bug or want to influence what gets built? [Open an issue](https://github
 
 ## Tech stack
 
-TypeScript end to end: React 19 + TanStack Router + TailwindCSS/shadcn-ui on the front, Hono on Cloudflare Workers with D1 (SQLite) + Drizzle ORM on the back, Better Auth for authentication, Turborepo for the monorepo.
+TypeScript end to end: React 19 + TanStack Router + TailwindCSS/shadcn-ui on the front, Hono on Cloudflare Workers with D1 (SQLite) + Drizzle ORM on the back, Better Auth for authentication. Bun workspaces with [mprocs](https://github.com/pvolok/mprocs) for dev orchestration and Vitest for tests.
 
 ## Getting started
 
@@ -93,9 +93,10 @@ openwrite/
 
 ## Available scripts
 
-- `bun dev` — start all applications in development mode
+- `bun dev` — start web + server in an mprocs TUI (db-studio and docs available as extra panes)
 - `bun build` — build all applications
 - `bun dev:web` / `bun dev:server` — start a single app
+- `bun test` — run the Vitest suites (web + server)
 - `bun quality` — type checking + linting (run before committing)
 - `bun db:push` — push schema changes to the database
 - `bun db:studio` — open the Drizzle Studio database UI
