@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
 import { Sparkles } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 import { AIChatContent } from "@/components/ai-chat-content"
 
@@ -29,14 +29,30 @@ export const Route = createFileRoute("/projects/$projectId")({
 
 function WriteLayout() {
   const { projectId } = Route.useParams()
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true)
   const isMobile = useIsMobile()
+  // On mobile the assistant is a full-screen sheet, so it must not auto-open
+  // over the editor; on desktop it's a docked sidebar that opens by default.
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false)
+  const userToggledRef = useRef(false)
+
+  // The assistant is docked (open) on desktop and closed on mobile by default.
+  // Track the viewport until the user explicitly toggles it.
+  useEffect(() => {
+    if (!userToggledRef.current) {
+      setRightSidebarOpen(!isMobile)
+    }
+  }, [isMobile])
+
+  const toggleSidebar = () => {
+    userToggledRef.current = true
+    setRightSidebarOpen((prev) => !prev)
+  }
 
   // Keyboard shortcut to toggle AI assistant
   useHotkeys(
     "cmd+j, ctrl+j",
     () => {
-      setRightSidebarOpen((prev) => !prev)
+      toggleSidebar()
     },
     {
       preventDefault: true,
@@ -97,11 +113,7 @@ function WriteLayout() {
             {/* AI Assistant Toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  onClick={() => setRightSidebarOpen((prev) => !prev)}
-                  size="sm"
-                  variant="outline"
-                >
+                <Button onClick={toggleSidebar} size="sm" variant="outline">
                   <Sparkles className="h-4 w-4" />
                   <span className="sr-only">Toggle AI Assistant</span>
                 </Button>

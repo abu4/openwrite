@@ -82,6 +82,10 @@ The set that lets a NovelCrafter/Word user actually switch.
 - [ ] Real co-authoring / editor invitations (teams schema exists; no live collab)
 - [ ] Mobile-friendly editing pass
 
+## Testing
+- [x] Unit/component tests (Vitest, web + server), auto-running in mprocs
+- [x] E2E tests (Playwright): writer journey + mobile editor regression, CI job
+
 ## Our differentiators (lean in, they don't have these)
 
 - Visual story graph with typed, semantic connections driving generation

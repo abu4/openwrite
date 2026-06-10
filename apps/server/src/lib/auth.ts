@@ -90,7 +90,14 @@ function buildAuthInstance(env: AuthEnv) {
         [
           env.CORS_ORIGIN,
           env.BETTER_AUTH_URL,
+          // Canonical production origins — always trusted regardless of env
+          "https://openwrite.iliareingold.com",
           "https://openwrite.ilia-reingold.workers.dev",
+          // Local development: vite (3001) + wrangler (3000), and the
+          // hostname wrangler dev simulates from the custom_domain route
+          "http://localhost:3001",
+          "http://localhost:3000",
+          "http://openwrite.iliareingold.com",
         ].filter(Boolean)
       ),
     ],

@@ -62,7 +62,7 @@ const HEADINGS = [
 ] as const
 
 function ToolbarSeparator() {
-  return <Separator className="mx-1 h-6" orientation="vertical" />
+  return <Separator className="mx-1 h-6 shrink-0" orientation="vertical" />
 }
 
 function HeadingMenu({ editor }: EditorToolbarProps) {
@@ -200,7 +200,10 @@ function LinkControl({ editor }: EditorToolbarProps) {
 
 export function EditorToolbar({ editor }: EditorToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b bg-background px-2 py-1.5">
+    <div
+      className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b bg-background px-2 py-1.5 [&>button]:shrink-0"
+      data-testid="editor-toolbar"
+    >
       <Button
         className="h-8 w-8 p-0"
         disabled={!editor.can().undo()}
