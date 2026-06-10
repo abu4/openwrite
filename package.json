@@ -31,11 +31,22 @@
     "db:migrate": "bun run --cwd apps/server db:migrate",
     "deploy": "bun run build && bun run --cwd apps/server deploy"
   },
-  "dependencies": {},
+  "dependencies": {
+    "prosemirror-model": "^1.25.7",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-transform": "^1.12.0",
+    "prosemirror-view": "^1.41.8"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
     "mprocs": "^0.9.6",
     "ultracite": "^7.8.2"
   },
-  "packageManager": "bun@1.3.14"
+  "packageManager": "bun@1.3.14",
+  "overrides": {
+    "prosemirror-state": "1.4.4",
+    "prosemirror-model": "1.25.7",
+    "prosemirror-view": "1.41.8",
+    "prosemirror-transform": "1.12.0"
+  }
 }

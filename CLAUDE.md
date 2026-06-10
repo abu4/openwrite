@@ -73,6 +73,14 @@ Navigate to specific app directories for additional commands:
 
 The web application runs on http://localhost:3001 and the API on http://localhost:3000.
 
+## Frontend Conventions
+
+- **shadcn/ui first.** All UI is built from the primitives in `apps/web/src/components/ui/` (Radix + Tailwind). Never introduce a parallel component kit, custom popover/dropdown primitives, or SCSS — add missing primitives via the shadcn registry instead. The Tiptap editor is headless; its toolbar lives in `components/editor-toolbar.tsx` built on shadcn `Toggle`/`DropdownMenu`/`Dialog`.
+- **Forms:** plain controlled state for simple forms; TanStack Form + zod when validation is non-trivial (see `login-block.tsx`). Don't mix patterns within a feature.
+- **Loading states** use the `Skeleton` component, not hand-rolled `animate-pulse` divs, for new code.
+- **Icons:** lucide-react only.
+- **Theme:** use design tokens (`bg-background`, `text-muted-foreground`, `var(--primary)`), not hardcoded palette classes, in new code.
+
 ## Testing
 
 Run `bun test` (Vitest, web + server suites) and `bun check-types` before committing. Add or extend tests alongside new features — pure logic (word counts, encryption, prompt building, type inference) should always have unit coverage.
