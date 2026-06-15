@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router"
 import { Edit3, FileText, MessageCircle, Settings, Users } from "lucide-react"
+import { ExportButton } from "@/components/export-button"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import { AISidebarProvider, useAISidebar } from "@/contexts/ai-sidebar-context"
 import { api } from "@/lib/api"
 
@@ -87,10 +89,23 @@ function ProjectLayout() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="text-sm opacity-75">
-                {project.currentWordCount.toLocaleString()} /{" "}
-                {project.targetWordCount?.toLocaleString() || "∞"} words
+              <div className="min-w-32">
+                <div className="text-sm opacity-75">
+                  {project.currentWordCount.toLocaleString()} /{" "}
+                  {project.targetWordCount?.toLocaleString() || "∞"} words
+                </div>
+                {project.targetWordCount ? (
+                  <Progress
+                    className="mt-1 h-1.5"
+                    value={Math.min(
+                      100,
+                      (project.currentWordCount / project.targetWordCount) * 100
+                    )}
+                  />
+                ) : null}
               </div>
+
+              <ExportButton projectId={id} projectTitle={project.title} />
 
               {/* AI Assistant Toggle - Only show on write page */}
               {isWritePage && (
