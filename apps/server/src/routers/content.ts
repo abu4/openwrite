@@ -3,6 +3,7 @@ import { type Context, Hono } from "hono"
 import { db } from "../db"
 import { chapter, project, work } from "../db/schema"
 import { buildReorderUpdates, nextChapterTitle, workTypeForProject } from "../lib/chapters"
+import { isStaleContentWrite, secondResolutionNow } from "../lib/optimistic-concurrency"
 import { countWordsInHtml } from "../lib/word-count"
 import { requireAuth, verifyProjectAccess } from "../middleware/auth"
 
@@ -343,7 +344,7 @@ contentRouter.put(
       return c.json({ error: "Chapter not found" }, 404)
     }
 
-    let body: { content?: unknown }
+    let body: { content?: unknown; baseUpdatedAt?: unknown }
     try {
       body = await c.req.json()
     } catch {
@@ -355,8 +356,24 @@ contentRouter.put(
       return c.json({ error: "Content must be a string under 1MB" }, 400)
     }
 
+    // Reject blind overwrites of a chapter that changed elsewhere since the
+    // client loaded it. The client echoes back the `updatedAt` it last saw.
+    const baseUpdatedAt = typeof body.baseUpdatedAt === "string" ? body.baseUpdatedAt : undefined
+    const currentUpdatedAt = existing.updatedAt.toISOString()
+    if (isStaleContentWrite(baseUpdatedAt, currentUpdatedAt)) {
+      return c.json(
+        {
+          error: "This chapter was changed elsewhere since you opened it.",
+          code: "stale_content",
+          currentUpdatedAt,
+          currentWordCount: existing.wordCount ?? 0,
+        },
+        409
+      )
+    }
+
     const wordCount = countWordsInHtml(validated.content)
-    const now = new Date()
+    const now = secondResolutionNow()
 
     await db
       .update(chapter)

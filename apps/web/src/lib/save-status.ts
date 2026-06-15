@@ -1,4 +1,4 @@
-export type SaveState = "idle" | "dirty" | "saving" | "saved" | "error"
+export type SaveState = "idle" | "dirty" | "saving" | "saved" | "error" | "conflict"
 
 function formatTime(isoDate: string): string {
   return new Date(isoDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -12,6 +12,8 @@ export function saveStatusText(state: SaveState, savedAt: string | null): string
       return "Saving…"
     case "error":
       return "Save failed — retrying on next edit"
+    case "conflict":
+      return "Edited elsewhere — reload to continue"
     case "saved":
       return savedAt ? `Saved at ${formatTime(savedAt)}` : "Saved"
     default:

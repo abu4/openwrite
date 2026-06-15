@@ -78,11 +78,12 @@ export const chaptersApi = {
   async saveContent(
     projectId: string,
     chapterId: string,
-    content: string
+    content: string,
+    baseUpdatedAt?: string
   ): Promise<SaveChapterContentResult> {
     return (await apiCall(`/api/projects/${projectId}/chapters/${chapterId}/content`, {
       method: "PUT",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, baseUpdatedAt }),
     })) as SaveChapterContentResult
   },
 }
