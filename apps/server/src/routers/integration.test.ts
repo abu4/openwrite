@@ -22,7 +22,8 @@ vi.mock("../lib/auth", () => ({
   }),
 }))
 
-import { member, organization, project, user } from "../db/schema"
+import { and, eq } from "drizzle-orm"
+import { member, organization, project, user, work, writingSession } from "../db/schema"
 import { applyMigrations, testDb } from "../test/test-db"
 import { apiRouter } from "./index"
 
@@ -204,5 +205,85 @@ describe("chapter content optimistic-concurrency guard", () => {
       body: JSON.stringify({ content: "<p>forced</p>" }),
     })
     expect(res.status).toBe(200)
+  })
+})
+
+describe("writing session instrumentation", () => {
+  let chapterId = ""
+
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+
+    const createRes = await request(`/api/projects/${PROJECT_ID}/chapters`, {
+      method: "POST",
+      body: JSON.stringify({ title: "Instrumented Chapter" }),
+    })
+    chapterId = ((await createRes.json()) as { id: string }).id
+  })
+
+  afterAll(() => {
+    vi.useRealTimers()
+  })
+
+  function saveContent(content: string) {
+    return request(`/api/projects/${PROJECT_ID}/chapters/${chapterId}/content`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    })
+  }
+
+  function sessionsForChapter() {
+    return testDb
+      .select()
+      .from(writingSession)
+      .where(and(eq(writingSession.chapterId, chapterId), eq(writingSession.userId, USER_ID)))
+      .orderBy(writingSession.startTime)
+  }
+
+  it("opens a session on the first save and stamps the work", async () => {
+    vi.setSystemTime(new Date("2026-07-01T09:00:00.000Z"))
+    const res = await saveContent("<p>Hello brave world</p>")
+    expect(res.status).toBe(200)
+
+    const sessions = await sessionsForChapter()
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].wordsWritten).toBe(3)
+    expect(sessions[0].timeSpent).toBe(0)
+
+    const works = await testDb.select().from(work).where(eq(work.projectId, PROJECT_ID))
+    expect(works[0].lastWrittenAt?.toISOString()).toBe("2026-07-01T09:00:00.000Z")
+  })
+
+  it("rolls a save within the gap into the same session", async () => {
+    vi.setSystemTime(new Date("2026-07-01T09:10:00.000Z"))
+    const res = await saveContent("<p>Hello brave world of many more words</p>")
+    expect(res.status).toBe(200)
+
+    const sessions = await sessionsForChapter()
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].wordsWritten).toBe(7) // 3 + (7 - 3) added words
+    expect(sessions[0].timeSpent).toBe(10)
+    expect(sessions[0].endTime?.toISOString()).toBe("2026-07-01T09:10:00.000Z")
+  })
+
+  it("does not count deletions as words written", async () => {
+    vi.setSystemTime(new Date("2026-07-01T09:15:00.000Z"))
+    const res = await saveContent("<p>Hello world</p>")
+    expect(res.status).toBe(200)
+
+    const sessions = await sessionsForChapter()
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].wordsWritten).toBe(7)
+  })
+
+  it("opens a new session after the idle gap", async () => {
+    vi.setSystemTime(new Date("2026-07-01T10:30:00.000Z"))
+    const res = await saveContent("<p>Hello world again</p>")
+    expect(res.status).toBe(200)
+
+    const sessions = await sessionsForChapter()
+    expect(sessions).toHaveLength(2)
+    expect(sessions[1].wordsWritten).toBe(1) // 3 - 2 words added
+    expect(sessions[1].timeSpent).toBe(0)
   })
 })

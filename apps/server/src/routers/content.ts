@@ -5,6 +5,7 @@ import { chapter, project, work } from "../db/schema"
 import { buildReorderUpdates, nextChapterTitle, workTypeForProject } from "../lib/chapters"
 import { isStaleContentWrite, secondResolutionNow } from "../lib/optimistic-concurrency"
 import { countWordsInHtml } from "../lib/word-count"
+import { recordWritingActivity } from "../lib/writing-sessions"
 import { requireAuth, verifyProjectAccess } from "../middleware/auth"
 
 interface Env {
@@ -382,6 +383,20 @@ contentRouter.put(
 
     const projectWordCount = await syncProjectWordCount(projectId, true)
 
+    // Analytics must never fail a save
+    try {
+      await recordWritingActivity({
+        projectId,
+        workId: existing.workId,
+        chapterId,
+        userId: c.get("user").id,
+        wordDelta: wordCount - (existing.wordCount ?? 0),
+        now,
+      })
+    } catch (error) {
+      console.error("Failed to record writing session:", error)
+    }
+
     return c.json({
       success: true,
       chapterId,
@@ -479,6 +494,20 @@ contentRouter.put(
       .where(eq(chapter.id, primary.id))
 
     await syncProjectWordCount(projectId, true)
+
+    // Analytics must never fail a save
+    try {
+      await recordWritingActivity({
+        projectId,
+        workId: primary.workId,
+        chapterId: primary.id,
+        userId: c.get("user").id,
+        wordDelta: wordCount - (primary.wordCount ?? 0),
+        now,
+      })
+    } catch (error) {
+      console.error("Failed to record writing session:", error)
+    }
 
     return c.json({
       success: true,

@@ -176,6 +176,19 @@ function WriteInterface() {
       setSelectedChapterId(result.id)
     },
   })
+  const { mutate: createFirstChapterMutate } = createFirstChapter
+
+  // A brand-new project has no chapters; create Chapter 1 automatically so the
+  // writer lands in an editor, not in front of another button. The ref makes
+  // this a single attempt — on failure the manual button below takes over.
+  const autoCreateAttemptedRef = useRef(false)
+  useEffect(() => {
+    if (chaptersLoading || chapters.length > 0 || autoCreateAttemptedRef.current) {
+      return
+    }
+    autoCreateAttemptedRef.current = true
+    createFirstChapterMutate()
+  }, [chaptersLoading, chapters.length, createFirstChapterMutate])
 
   if (chaptersLoading) {
     return (
@@ -197,14 +210,20 @@ function WriteInterface() {
       <div className="flex min-w-0 flex-1 flex-col">
         {chapters.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-            <p className="text-muted-foreground">Every novel starts with a first chapter.</p>
-            <Button
-              disabled={createFirstChapter.isPending}
-              onClick={() => createFirstChapter.mutate()}
-              type="button"
-            >
-              Create Chapter 1
-            </Button>
+            {createFirstChapter.isError ? (
+              <>
+                <p className="text-muted-foreground">Every novel starts with a first chapter.</p>
+                <Button
+                  disabled={createFirstChapter.isPending}
+                  onClick={() => createFirstChapter.mutate()}
+                  type="button"
+                >
+                  Create Chapter 1
+                </Button>
+              </>
+            ) : (
+              <p className="animate-pulse text-muted-foreground">Preparing your first chapter…</p>
+            )}
           </div>
         )}
 

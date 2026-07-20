@@ -57,6 +57,13 @@
       "when": 1781037955539,
       "tag": "0007_next_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784575626402,
+      "tag": "0008_simple_iron_man",
+      "breakpoints": true
     }
   ]
 }

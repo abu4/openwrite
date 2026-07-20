@@ -29,7 +29,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
           </Button>
         </div>
       )}
-      <Link params={{ projectId: project.id }} to="/projects/$projectId/canvas">
+      <Link params={{ projectId: project.id }} to="/projects/$projectId/write">
         <div className="cursor-pointer">
           <CardHeader>
             <div className="flex items-start justify-between pr-8">

@@ -9,6 +9,8 @@
   // Keep the legacy workers.dev URL serving existing users' bookmarks
   "workers_dev": true,
   "send_email": [{ "name": "EMAIL" }],
+  // Daily re-engagement sweep (see src/scheduled.ts)
+  "triggers": { "crons": ["0 15 * * *"] },
   "assets": {
     "directory": "../web/dist",
     "binding": "ASSETS",
