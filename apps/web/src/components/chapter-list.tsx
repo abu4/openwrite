@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { ArrowDown, ArrowUp, Network, Pencil, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/confirm-dialog"
@@ -204,6 +205,20 @@ export function ChapterList({
             )}
           </div>
         ))}
+      </div>
+
+      <div className="border-t p-2">
+        <Button
+          asChild
+          className="w-full justify-start text-muted-foreground"
+          size="sm"
+          variant="ghost"
+        >
+          <Link params={{ projectId }} to="/projects/$projectId/canvas">
+            <Network className="mr-2 h-4 w-4" />
+            Map your story
+          </Link>
+        </Button>
       </div>
     </div>
   )
