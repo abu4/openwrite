@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   Background,
   BackgroundVariant,
@@ -21,12 +21,15 @@ import React, { useCallback, useMemo, useState } from "react"
 import "@xyflow/react/dist/style.css"
 
 import {
+  BookPlus,
   Circle,
   Edit,
   FileText,
   Layers,
   Loader2,
+  Network,
   Redo2,
+  Sparkles,
   Square,
   Target,
   Triangle,
@@ -67,14 +70,18 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { api, type ConnectionType, type GraphNodeType } from "@/lib/api"
+import { ApiError, api, type ConnectionType, type GraphNodeType } from "@/lib/api"
+import { computeTreeLayout } from "@/lib/graph-layout"
 
 export const Route = createFileRoute("/projects/$projectId/canvas")({
   component: StoryCanvasPage,
 })
 
 // Story element types - now using our graph types
-type StoryElementType = "act" | "chapter" | "scene" | "beat" | "plot-point"
+type StoryElementType = "premise" | "act" | "chapter" | "scene" | "beat" | "plot-point"
+
+// Subtypes the expand endpoint can decompose one level down
+const EXPANDABLE_SUBTYPES = new Set(["premise", "act", "chapter", "scene"])
 
 // Enhanced story node data interface matching our graph system
 interface StoryNodeData extends Record<string, unknown> {
@@ -109,6 +116,12 @@ type StoryNode = Node<StoryNodeData>
 
 // Node type configurations
 const nodeConfigs = {
+  premise: {
+    color: "bg-indigo-500",
+    icon: <Sparkles className="h-4 w-4" />,
+    label: "Premise",
+    description: "The story's core idea",
+  },
   act: {
     color: "bg-blue-500",
     icon: <Layers className="h-4 w-4" />,
@@ -142,9 +155,17 @@ const nodeConfigs = {
 }
 
 // Custom Story Node Component
-function StoryNode(props: NodeProps<StoryNode> & { onEdit?: (node: StoryNode) => void }) {
-  const { data, selected, id, onEdit } = props
+function StoryNode(
+  props: NodeProps<StoryNode> & {
+    onEdit?: (node: StoryNode) => void
+    onExpand?: (graphNodeId: string) => void
+  }
+) {
+  const { data, selected, id, onEdit, onExpand } = props
   const config = nodeConfigs[data.elementType]
+
+  const isExpandable =
+    data.nodeType === "story_element" && EXPANDABLE_SUBTYPES.has(data.subType ?? "")
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -155,6 +176,13 @@ function StoryNode(props: NodeProps<StoryNode> & { onEdit?: (node: StoryNode) =>
         position: { x: 0, y: 0 },
         data,
       } as StoryNode)
+    }
+  }
+
+  const handleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onExpand && data.graphNodeId) {
+      onExpand(data.graphNodeId)
     }
   }
 
@@ -172,6 +200,17 @@ function StoryNode(props: NodeProps<StoryNode> & { onEdit?: (node: StoryNode) =>
           <Badge className="text-xs" variant="secondary">
             {config.label}
           </Badge>
+          {isExpandable && (
+            <Button
+              className="h-6 w-6 p-0 hover:bg-white/20"
+              onClick={handleExpand}
+              size="sm"
+              title="Expand with AI"
+              variant="ghost"
+            >
+              <Sparkles className="h-3 w-3" />
+            </Button>
+          )}
           <Button
             className="h-6 w-6 p-0 hover:bg-white/20"
             onClick={handleEdit}
@@ -263,9 +302,10 @@ function inferConnectionType(source: GraphNodeType, target: GraphNodeType): Conn
 function StoryCanvas() {
   const { projectId } = Route.useParams()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
 
   // Load graph data from API
-  const { data: graphNodes = [] } = useQuery({
+  const { data: graphNodes = [], isLoading: nodesLoading } = useQuery({
     queryKey: ["graph-nodes", projectId],
     queryFn: async () => await api.graph.listNodes(projectId),
   })
@@ -346,20 +386,6 @@ function StoryCanvas() {
     setSelectedNode(node)
     setIsDetailPaneOpen(true)
   }, [])
-
-  // Create StoryNode wrapper with edit functionality
-  const StoryNodeWithEdit = useCallback(
-    (props: NodeProps<StoryNode>) => <StoryNode {...props} onEdit={handleNodeEdit} />,
-    [handleNodeEdit]
-  )
-
-  // Node types configuration
-  const nodeTypes = useMemo(
-    () => ({
-      storyNode: StoryNodeWithEdit,
-    }),
-    [StoryNodeWithEdit]
-  )
 
   // Update nodes and edges when graph data loads (safe one-time update)
   React.useEffect(() => {
@@ -458,6 +484,177 @@ function StoryCanvas() {
       toast.error("Failed to delete node. Please try again.")
     },
   })
+
+  // ---------------------------------------------------------------------
+  // Auto-layout: dagre tree over all nodes/edges, applied locally and
+  // persisted. Runs on demand (View menu) and after every expansion.
+  const applyAutoLayout = useCallback(() => {
+    if (graphNodes.length === 0) {
+      return
+    }
+    const positions = computeTreeLayout(
+      graphNodes.map((node) => ({ id: node.id })),
+      graphConnections.map((conn) => ({ source: conn.sourceNodeId, target: conn.targetNodeId }))
+    )
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        const position = positions.get(node.id)
+        return position ? { ...node, position } : node
+      })
+    )
+    for (const [nodeId, position] of positions) {
+      updateNodePositionMutation.mutate({
+        nodeId,
+        positionX: position.x,
+        positionY: position.y,
+      })
+    }
+    window.setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50)
+  }, [graphNodes, graphConnections, setNodes, updateNodePositionMutation, fitView])
+
+  // Layout must wait for the refetched nodes/edges to land in this render
+  const pendingLayoutRef = React.useRef(false)
+  React.useEffect(() => {
+    if (pendingLayoutRef.current && graphNodes.length > 0) {
+      pendingLayoutRef.current = false
+      applyAutoLayout()
+    }
+  }, [graphNodes, applyAutoLayout])
+
+  // ---------------------------------------------------------------------
+  // Expand a story element into its next structural level via AI
+  const expandToastRef = React.useRef<string | number | undefined>(undefined)
+  const expandingRef = React.useRef(false)
+
+  const expandNodeMutation = useMutation({
+    mutationFn: async (graphNodeId: string) => await api.graph.expandNode(projectId, graphNodeId),
+    onMutate: () => {
+      expandingRef.current = true
+      expandToastRef.current = toast.loading("Expanding story element…")
+    },
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["graph-nodes", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["graph-connections", projectId] }),
+      ])
+      pendingLayoutRef.current = true
+      toast.success(`Added ${result.nodes.length} connected elements`, {
+        id: expandToastRef.current,
+      })
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === "no_provider") {
+        toast.error("Connect an AI provider to expand story elements.", {
+          id: expandToastRef.current,
+          action: {
+            label: "Set up",
+            onClick: () => navigate({ to: "/dashboard/ai" }),
+          },
+        })
+        return
+      }
+      toast.error(error instanceof Error ? error.message : "Failed to expand this element", {
+        id: expandToastRef.current,
+      })
+    },
+    onSettled: () => {
+      expandingRef.current = false
+    },
+  })
+  const { mutate: expandNode } = expandNodeMutation
+
+  const handleNodeExpand = useCallback(
+    (graphNodeId: string) => {
+      if (expandingRef.current) {
+        toast.info("An expansion is already running…")
+        return
+      }
+      expandNode(graphNodeId)
+    },
+    [expandNode]
+  )
+
+  // ---------------------------------------------------------------------
+  // Promote a chapter node into a real manuscript chapter
+  const promoteNodeMutation = useMutation({
+    mutationFn: async (graphNodeId: string) => await api.graph.promoteNode(projectId, graphNodeId),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["chapters", projectId] })
+      queryClient.invalidateQueries({ queryKey: ["graph-nodes", projectId] })
+      if (result.alreadyPromoted) {
+        toast.info("This chapter is already in your manuscript.", {
+          action: {
+            label: "Open Write",
+            onClick: () => navigate({ to: "/projects/$projectId/write", params: { projectId } }),
+          },
+        })
+        return
+      }
+      toast.success("Chapter added to your manuscript.", {
+        action: {
+          label: "Open Write",
+          onClick: () => navigate({ to: "/projects/$projectId/write", params: { projectId } }),
+        },
+      })
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to promote this chapter")
+    },
+  })
+
+  // ---------------------------------------------------------------------
+  // First-run premise capture: one sentence in, a story map out
+  const [premiseText, setPremiseText] = useState("")
+  const [isCreatingPremise, setIsCreatingPremise] = useState(false)
+
+  const handleCreatePremise = useCallback(async () => {
+    const text = premiseText.trim()
+    if (!text) {
+      return
+    }
+    setIsCreatingPremise(true)
+    try {
+      const title = text.length > 60 ? `${text.slice(0, 57)}…` : text
+      await api.graph.createNode(projectId, {
+        nodeType: "story_element",
+        subType: "premise",
+        title,
+        description: text,
+        positionX: 0,
+        positionY: 0,
+        visualProperties: api.graph.stringifyVisualProperties({
+          color: "bg-indigo-500",
+          size: "medium",
+          icon: "✨",
+          shape: "rectangle",
+        }),
+      })
+      await queryClient.invalidateQueries({ queryKey: ["graph-nodes", projectId] })
+      setPremiseText("")
+      toast.success("Premise created — press its ✨ button to expand it into acts.")
+    } catch {
+      toast.error("Failed to create the premise. Please try again.")
+    } finally {
+      setIsCreatingPremise(false)
+    }
+  }, [premiseText, projectId, queryClient])
+
+  // Create StoryNode wrapper with edit + expand functionality
+  const StoryNodeWithEdit = useCallback(
+    (props: NodeProps<StoryNode>) => (
+      <StoryNode {...props} onEdit={handleNodeEdit} onExpand={handleNodeExpand} />
+    ),
+    [handleNodeEdit, handleNodeExpand]
+  )
+
+  // Node types configuration
+  const nodeTypes = useMemo(
+    () => ({
+      storyNode: StoryNodeWithEdit,
+    }),
+    [StoryNodeWithEdit]
+  )
 
   // Handle edge connections - persist to database
   const onConnect = useCallback(
@@ -826,6 +1023,10 @@ function StoryCanvas() {
               <FileText className="mr-2 h-4 w-4" />
               Fit View <MenubarShortcut>⌘0</MenubarShortcut>
             </MenubarItem>
+            <MenubarItem onClick={applyAutoLayout}>
+              <Network className="mr-2 h-4 w-4" />
+              Auto-layout
+            </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
 
@@ -878,6 +1079,45 @@ function StoryCanvas() {
         >
           <Controls position="bottom-right" />
           <Background gap={20} size={1} variant={BackgroundVariant.Dots} />
+
+          {/* First-run premise capture: seed the story map from one idea */}
+          {!nodesLoading && graphNodes.length === 0 && (
+            <Panel className="w-[420px] max-w-[90vw]" position="top-center">
+              <div className="mt-16 space-y-4 rounded-xl border bg-background/95 p-6 shadow-lg backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-indigo-500 p-2 text-white">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <h2 className="font-semibold text-lg">Start your story map</h2>
+                </div>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Describe your story in a sentence or two. Then expand it — premise into acts, acts
+                  into chapters, chapters into scenes — each level graphically connected to the
+                  last.
+                </p>
+                <Textarea
+                  className="min-h-[80px] resize-none"
+                  onChange={(e) => setPremiseText(e.target.value)}
+                  placeholder="A lighthouse keeper discovers the ships she guides ashore arrive from a century in the past…"
+                  rows={3}
+                  value={premiseText}
+                />
+                <Button
+                  className="w-full"
+                  disabled={isCreatingPremise || !premiseText.trim()}
+                  onClick={handleCreatePremise}
+                  type="button"
+                >
+                  {isCreatingPremise ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  Create premise
+                </Button>
+              </div>
+            </Panel>
+          )}
 
           {/* Info Panel */}
           <Panel
@@ -1162,6 +1402,30 @@ function StoryCanvas() {
                   </TabsContent>
                 </Tabs>
               </div>
+
+              {selectedNode.data.nodeType === "story_element" &&
+                selectedNode.data.subType === "chapter" && (
+                  <div className="border-t px-2 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-sm">Manuscript</h4>
+                        <p className="mt-1 text-muted-foreground text-xs">
+                          Send this chapter to the Write editor
+                        </p>
+                      </div>
+                      <Button
+                        disabled={promoteNodeMutation.isPending}
+                        onClick={() => promoteNodeMutation.mutate(selectedNode.data.graphNodeId)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        <BookPlus className="mr-2 h-4 w-4" />
+                        Promote to manuscript
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
               <div className="border-t px-2 pt-4">
                 <div className="flex items-center justify-between">
