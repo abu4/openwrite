@@ -9,7 +9,7 @@ import { type ApiClient, apiCall } from "./base"
 
 // Graph Node Types
 export type GraphNodeType = "story_element" | "character" | "location" | "lore" | "plot_thread"
-export type StoryElementType = "act" | "chapter" | "scene" | "beat" | "plot_point"
+export type StoryElementType = "premise" | "act" | "chapter" | "scene" | "beat" | "plot_point"
 export type ConnectionType =
   | "story_flow"
   | "character_arc"
@@ -271,6 +271,31 @@ export const graphApi = {
   ) => createTextBlockApi(projectId).update(storyNodeId, blockId, data),
   deleteTextBlock: (projectId: string, storyNodeId: string, blockId: string) =>
     createTextBlockApi(projectId).delete(storyNodeId, blockId),
+
+  expandNode: async (
+    projectId: string,
+    nodeId: string,
+    data: { instructions?: string; model?: string } = {}
+  ): Promise<{
+    success: boolean
+    nodes: GraphNode[]
+    connections: GraphConnection[]
+    provider: string
+    model: string | null
+  }> =>
+    await apiCall(`/api/projects/${projectId}/graph/nodes/${nodeId}/expand`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  promoteNode: async (
+    projectId: string,
+    nodeId: string
+  ): Promise<{ success: boolean; chapterId: string; alreadyPromoted: boolean }> =>
+    await apiCall(`/api/projects/${projectId}/graph/nodes/${nodeId}/promote`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
 
   generateDraft: async (
     projectId: string,

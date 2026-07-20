@@ -38,6 +38,7 @@
     "wrangler": "^4.99.0"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@fontsource/fira-code": "^5.2.7",
     "@fontsource/geist-sans": "^5.2.5",
     "@fontsource/lora": "^5.2.8",

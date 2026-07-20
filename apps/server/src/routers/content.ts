@@ -54,7 +54,7 @@ async function findPrimaryWork(projectId: string) {
     .get()
 }
 
-async function getOrCreatePrimaryWork(projectId: string): Promise<string | null> {
+export async function getOrCreatePrimaryWork(projectId: string): Promise<string | null> {
   const existing = await findPrimaryWork(projectId)
   if (existing) {
     return existing.id
@@ -87,7 +87,7 @@ async function getOrCreatePrimaryWork(projectId: string): Promise<string | null>
   return workId
 }
 
-async function listProjectChapters(projectId: string) {
+export async function listProjectChapters(projectId: string) {
   return await db
     .select({
       id: chapter.id,
@@ -122,7 +122,10 @@ async function getChapterInProject(projectId: string, chapterId: string) {
 }
 
 // Project word count is the sum of all chapter word counts across its works
-async function syncProjectWordCount(projectId: string, markWritten: boolean): Promise<number> {
+export async function syncProjectWordCount(
+  projectId: string,
+  markWritten: boolean
+): Promise<number> {
   const rows = await db
     .select({ wordCount: chapter.wordCount })
     .from(chapter)

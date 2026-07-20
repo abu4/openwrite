@@ -2,9 +2,18 @@ import { OpenAPIHono } from "@hono/zod-openapi"
 import { and, asc, eq, inArray, or } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db"
-import { graphConnection, graphNode, project, textBlock } from "../db/schema"
+import { chapter, graphConnection, graphNode, project, textBlock } from "../db/schema"
+import {
+  buildExpansionPrompt,
+  EXPANSION_CHILD_SUBTYPE,
+  EXPANSION_SYSTEM_PROMPT,
+  isExpandableSubType,
+  parseExpansionResponse,
+} from "../lib/story-expansion"
+import { countWordsInHtml } from "../lib/word-count"
 import { requireAuth, verifyProjectAccess } from "../middleware/auth"
 import { isCompletionFailure, runCompletionForUser } from "./ai"
+import { getOrCreatePrimaryWork, listProjectChapters, syncProjectWordCount } from "./content"
 
 interface Env {
   BETTER_AUTH_SECRET: string
@@ -948,6 +957,340 @@ app.openapi(
       },
       200
     )
+  }
+)
+
+// ---------------------------------------------------------------------------
+// Node expansion — decompose a story element into the next structural level
+// (premise → acts → chapters → scenes → beats), created as connected nodes.
+
+const CHILD_SUBTYPE_COLORS: Record<string, string> = {
+  act: "bg-blue-500",
+  chapter: "bg-green-500",
+  scene: "bg-yellow-500",
+  beat: "bg-purple-500",
+}
+
+const MAX_ANCESTOR_DEPTH = 3
+
+// Walk metadata.parentNodeId links upward so expansion prompts know the
+// element's place in the whole story (outermost ancestor first).
+async function loadAncestorChain(node: LoadedNode): Promise<LoadedNode[]> {
+  const ancestors: LoadedNode[] = []
+  let current = node
+  while (ancestors.length < MAX_ANCESTOR_DEPTH) {
+    const parentId = parseNodeMetadata(current.metadata).parentNodeId
+    if (typeof parentId !== "string") {
+      break
+    }
+    const parent = await db.select().from(graphNode).where(eq(graphNode.id, parentId)).get()
+    if (!parent) {
+      break
+    }
+    ancestors.unshift(parent)
+    current = parent
+  }
+  return ancestors
+}
+
+function toContextItems(nodes: LoadedNode[]): { description: string | null; title: string }[] {
+  return nodes.map((item) => ({ title: item.title, description: item.description }))
+}
+
+app.openapi(
+  {
+    method: "post",
+    path: "/projects/{projectId}/graph/nodes/{nodeId}/expand",
+    request: {
+      params: z.object({
+        projectId: z.string(),
+        nodeId: z.string(),
+      }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              instructions: z.string().max(2000).optional(),
+              model: z.string().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              success: z.boolean(),
+              nodes: z.array(z.unknown()),
+              connections: z.array(z.unknown()),
+              provider: z.string(),
+              model: z.string().nullable(),
+            }),
+          },
+        },
+        description: "Node expanded into connected child elements",
+      },
+      400: errorContent,
+      404: errorContent,
+      412: errorContent,
+      500: errorContent,
+      502: errorContent,
+    },
+  },
+  async (c) => {
+    const { projectId, nodeId } = c.req.valid("param")
+    const { instructions, model } = c.req.valid("json")
+    const user = c.get("user")
+
+    const node = await db
+      .select()
+      .from(graphNode)
+      .where(and(eq(graphNode.id, nodeId), eq(graphNode.projectId, projectId)))
+      .get()
+
+    if (!node) {
+      return c.json({ error: "Node not found" }, 404)
+    }
+    if (node.nodeType !== "story_element" || !isExpandableSubType(node.subType)) {
+      return c.json({ error: "Only premise, act, chapter, and scene nodes can be expanded" }, 400)
+    }
+    const childSubType = EXPANSION_CHILD_SUBTYPE[node.subType]
+
+    const projectData = await db
+      .select({ title: project.title, genre: project.genre })
+      .from(project)
+      .where(eq(project.id, projectId))
+      .get()
+
+    if (!projectData) {
+      return c.json({ error: "Project not found" }, 404)
+    }
+
+    const [context, ancestors] = await Promise.all([
+      loadGenerationContext(projectId, nodeId),
+      loadAncestorChain(node),
+    ])
+
+    const prompt = buildExpansionPrompt({
+      projectTitle: projectData.title,
+      projectGenre: projectData.genre,
+      node: { title: node.title, description: node.description },
+      nodeSubType: node.subType,
+      childSubType,
+      ancestors: toContextItems(ancestors),
+      characters: toContextItems(context.characters),
+      locations: toContextItems(context.locations),
+      lore: toContextItems(context.lore),
+      instructions,
+    })
+
+    const result = await runCompletionForUser({
+      userId: user.id,
+      env: c.env,
+      system: EXPANSION_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
+      model,
+    })
+
+    if (isCompletionFailure(result)) {
+      return c.json({ error: result.error, code: result.code }, result.status)
+    }
+
+    const children = parseExpansionResponse(result.message)
+    if (!children) {
+      return c.json(
+        { error: "The AI response could not be parsed into story elements. Try again." },
+        502
+      )
+    }
+
+    const now = new Date()
+    const color = CHILD_SUBTYPE_COLORS[childSubType] ?? "bg-gray-500"
+
+    const createdNodes = children.map((child, index) => ({
+      id: crypto.randomUUID(),
+      projectId,
+      nodeType: "story_element" as const,
+      subType: childSubType,
+      title: child.title,
+      description: child.description,
+      // Fan the children out beneath the parent; the client auto-layouts after
+      positionX: Math.round((node.positionX ?? 0) + (index - (children.length - 1) / 2) * 280),
+      positionY: Math.round((node.positionY ?? 0) + 240),
+      visualProperties: JSON.stringify({ color, size: "medium", icon: "📄", shape: "rectangle" }),
+      metadata: JSON.stringify({ parentNodeId: node.id }),
+      wordCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    }))
+
+    // Tree edges (parent → each child) plus story_flow between consecutive
+    // siblings — the same edges the per-node generate endpoint reads as
+    // "what happens before".
+    const createdConnections: (typeof graphConnection.$inferInsert)[] = []
+    for (const [index, child] of createdNodes.entries()) {
+      createdConnections.push({
+        id: crypto.randomUUID(),
+        projectId,
+        sourceNodeId: node.id,
+        targetNodeId: child.id,
+        connectionType: "reference",
+        connectionStrength: 1,
+        metadata: JSON.stringify({ relation: "expansion" }),
+        createdAt: now,
+        updatedAt: now,
+      })
+      if (index > 0) {
+        createdConnections.push({
+          id: crypto.randomUUID(),
+          projectId,
+          sourceNodeId: createdNodes[index - 1].id,
+          targetNodeId: child.id,
+          connectionType: "story_flow",
+          connectionStrength: 1,
+          createdAt: now,
+          updatedAt: now,
+        })
+      }
+    }
+
+    await db.insert(graphNode).values(createdNodes)
+    await db.insert(graphConnection).values(createdConnections)
+
+    return c.json(
+      {
+        success: true,
+        nodes: createdNodes,
+        connections: createdConnections,
+        provider: result.provider,
+        model: result.model,
+      },
+      200
+    )
+  }
+)
+
+// ---------------------------------------------------------------------------
+// Promote a chapter-level node into a real manuscript chapter, so the story
+// map terminates in the Write editor instead of dead-ending on the canvas.
+
+const PARAGRAPH_SPLIT = /\n{2,}/
+const AMPERSAND = /&/g
+const LESS_THAN = /</g
+const GREATER_THAN = />/g
+const SINGLE_NEWLINE = /\n/g
+
+function escapeHtml(text: string): string {
+  return text.replace(AMPERSAND, "&amp;").replace(LESS_THAN, "&lt;").replace(GREATER_THAN, "&gt;")
+}
+
+// Text blocks are plain text/markdown; the manuscript editor stores HTML.
+function textToChapterHtml(text: string): string {
+  const paragraphs = text
+    .split(PARAGRAPH_SPLIT)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+  return paragraphs
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(SINGLE_NEWLINE, "<br>")}</p>`)
+    .join("")
+}
+
+const PROMOTE_TEXT_LIMIT = 200_000
+
+app.openapi(
+  {
+    method: "post",
+    path: "/projects/{projectId}/graph/nodes/{nodeId}/promote",
+    request: {
+      params: z.object({
+        projectId: z.string(),
+        nodeId: z.string(),
+      }),
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              success: z.boolean(),
+              chapterId: z.string(),
+              alreadyPromoted: z.boolean(),
+            }),
+          },
+        },
+        description: "Node promoted to a manuscript chapter",
+      },
+      400: errorContent,
+      404: errorContent,
+    },
+  },
+  async (c) => {
+    const { projectId, nodeId } = c.req.valid("param")
+
+    const node = await db
+      .select()
+      .from(graphNode)
+      .where(and(eq(graphNode.id, nodeId), eq(graphNode.projectId, projectId)))
+      .get()
+
+    if (!node) {
+      return c.json({ error: "Node not found" }, 404)
+    }
+    if (node.nodeType !== "story_element" || node.subType !== "chapter") {
+      return c.json({ error: "Only chapter nodes can be promoted to the manuscript" }, 400)
+    }
+
+    // Re-promoting returns the existing chapter instead of duplicating it
+    const metadata = parseNodeMetadata(node.metadata)
+    if (typeof metadata.promotedChapterId === "string") {
+      const existing = await db
+        .select({ id: chapter.id })
+        .from(chapter)
+        .where(eq(chapter.id, metadata.promotedChapterId))
+        .get()
+      if (existing) {
+        return c.json({ success: true, chapterId: existing.id, alreadyPromoted: true }, 200)
+      }
+    }
+
+    const workId = await getOrCreatePrimaryWork(projectId)
+    if (!workId) {
+      return c.json({ error: "Project not found" }, 404)
+    }
+
+    const existingChapters = await listProjectChapters(projectId)
+    const nodeText = await loadNodeText(nodeId, PROMOTE_TEXT_LIMIT)
+    const content = textToChapterHtml(nodeText)
+
+    const chapterId = crypto.randomUUID()
+    const now = new Date()
+
+    await db.insert(chapter).values({
+      id: chapterId,
+      title: node.title,
+      content,
+      summary: node.description ?? null,
+      wordCount: countWordsInHtml(content),
+      order: existingChapters.length + 1,
+      status: "draft",
+      workId,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await syncProjectWordCount(projectId, false)
+
+    await db
+      .update(graphNode)
+      .set({
+        metadata: JSON.stringify({ ...metadata, promotedChapterId: chapterId }),
+        updatedAt: now,
+      })
+      .where(eq(graphNode.id, nodeId))
+
+    return c.json({ success: true, chapterId, alreadyPromoted: false }, 200)
   }
 )
 

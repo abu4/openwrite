@@ -10,8 +10,15 @@ export const graphNodeTypeEnum = [
   "plot_thread", // Plot points and story threads
 ] as const
 
-// Sub-types for story elements
-export const storyElementTypeEnum = ["act", "chapter", "scene", "beat", "plot_point"] as const
+// Sub-types for story elements ("premise" is the root a story map expands from)
+export const storyElementTypeEnum = [
+  "premise",
+  "act",
+  "chapter",
+  "scene",
+  "beat",
+  "plot_point",
+] as const
 
 // Connection types between nodes
 export const connectionTypeEnum = [
