@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { BookOpen, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -48,6 +48,7 @@ interface CreateProjectForm {
 
 function ProjectsPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [createForm, setCreateForm] = useState<CreateProjectForm>({
@@ -81,7 +82,7 @@ function ProjectsPage() {
       })
       return result
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       setIsCreateDialogOpen(false)
       setCreateForm({
@@ -92,7 +93,8 @@ function ProjectsPage() {
         targetWordCount: "",
         visibility: "private",
       })
-      toast.success("Project created successfully!")
+      // Drop new writers straight into the editor instead of back on the list
+      navigate({ to: "/projects/$projectId/write", params: { projectId: result.id } })
     },
     onError: (_error) => {
       toast.error("Failed to create project")

@@ -16,6 +16,10 @@ describe("saveStatusText", () => {
     expect(saveStatusText("error", savedAt)).toContain("Save failed")
   })
 
+  it("tells the writer to reload when the chapter changed elsewhere", () => {
+    expect(saveStatusText("conflict", savedAt)).toContain("reload")
+  })
+
   it("includes the save time once saved", () => {
     expect(saveStatusText("saved", savedAt)).toMatch(/^Saved at /)
     expect(saveStatusText("saved", null)).toBe("Saved")

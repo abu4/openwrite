@@ -173,17 +173,17 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link params={{ projectId }} to="/projects/$projectId/canvas">
-                      <FileText />
-                      <span>Canvas</span>
+                    <Link params={{ projectId }} to="/projects/$projectId/write">
+                      <PenTool />
+                      <span>Write</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link params={{ projectId }} to="/projects/$projectId/write">
-                      <PenTool />
-                      <span>Write</span>
+                    <Link params={{ projectId }} to="/projects/$projectId/canvas">
+                      <FileText />
+                      <span>Canvas</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -94,6 +94,8 @@ interface StoryNodeData extends Record<string, unknown> {
   graphNodeId: string
   icon: string
   label: string
+  // For character nodes: the codex character this node represents (null = unlinked placeholder)
+  linkedCharacterId: string | null
   nodeType: GraphNodeType
   notes: string
   shape: string
@@ -273,6 +275,12 @@ function StoryCanvas() {
     queryFn: async () => await api.graph.listConnections(projectId),
   })
 
+  // Characters available to link into character nodes
+  const { data: characters = [] } = useQuery({
+    queryKey: ["characters", projectId],
+    queryFn: async () => await api.characters.list(projectId),
+  })
+
   // Convert graph nodes to ReactFlow nodes (memoized to prevent infinite loops)
   const flowNodes = useMemo(() => {
     const flowNodeList = graphNodes.map((node) => {
@@ -295,6 +303,8 @@ function StoryCanvas() {
           goals: typeof metadata.goals === "string" ? metadata.goals : "",
           conflict: typeof metadata.conflict === "string" ? metadata.conflict : "",
           notes: typeof metadata.notes === "string" ? metadata.notes : "",
+          linkedCharacterId:
+            typeof metadata.linkedCharacterId === "string" ? metadata.linkedCharacterId : null,
           characters: [],
           themes: [],
           elementType: (node.subType as StoryElementType) || "scene",
@@ -363,6 +373,21 @@ function StoryCanvas() {
       setEdges(flowEdges)
     }
   }, [graphConnections.length, flowEdges, setEdges])
+
+  // A node created via the menu lands in local state only after the refetch;
+  // open its detail pane once it appears rather than racing the invalidation.
+  const pendingSelectIdRef = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!pendingSelectIdRef.current) {
+      return
+    }
+    const created = flowNodes.find((node) => node.id === pendingSelectIdRef.current)
+    if (created) {
+      setSelectedNode(created)
+      setIsDetailPaneOpen(true)
+      pendingSelectIdRef.current = null
+    }
+  }, [flowNodes])
 
   // Handle node selection (sidebar only opens via edit button)
   const onNodeClick = useCallback((_: React.MouseEvent, node: StoryNode) => {
@@ -619,15 +644,9 @@ function StoryCanvas() {
         })
 
         if (result && "id" in result) {
-          // Wait for query invalidation to complete
           await waitForQueryInvalidation(queryClient, ["graph-nodes", projectId])
-
-          // Find and select the new node after invalidation
-          const newNode = nodes.find((n) => n.id === result.id)
-          if (newNode) {
-            setSelectedNode(newNode)
-            setIsDetailPaneOpen(true)
-          }
+          // The new node selects itself once the refetched data reaches local state.
+          pendingSelectIdRef.current = result.id
         }
       } catch (error) {
         handleNodeCreationError(error, nodeType)
@@ -639,7 +658,6 @@ function StoryCanvas() {
       screenToFlowPosition,
       projectId,
       queryClient,
-      nodes,
       getNodeConfig,
       getNodeTitle,
       getNodeDescription,
@@ -700,6 +718,8 @@ function StoryCanvas() {
           goals: data.goals,
           conflict: data.conflict,
           notes: data.notes,
+          linkedCharacterId: data.linkedCharacterId,
+          isPlaceholder: data.nodeType === "character" && !data.linkedCharacterId,
         }),
       }),
     onSuccess: () => {
@@ -914,6 +934,46 @@ function StoryCanvas() {
                   </TabsList>
 
                   <TabsContent className="space-y-5 px-1" value="overview">
+                    {selectedNode.data.nodeType === "character" && (
+                      <div className="space-y-2">
+                        <Label className="font-medium text-sm">Linked Character</Label>
+                        <Select
+                          onValueChange={(characterId) => {
+                            const character = characters.find((c) => c.id === characterId)
+                            if (!character) {
+                              return
+                            }
+                            updateSelectedNode({
+                              label: character.name,
+                              linkedCharacterId: character.id,
+                            })
+                            persistNodeData({
+                              ...selectedNode.data,
+                              label: character.name,
+                              linkedCharacterId: character.id,
+                            })
+                          }}
+                          value={selectedNode.data.linkedCharacterId ?? ""}
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Choose a character" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {characters.map((character) => (
+                              <SelectItem key={character.id} value={character.id}>
+                                {character.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {characters.length === 0 && (
+                          <p className="text-muted-foreground text-xs">
+                            No characters yet — add some in the Codex first.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label className="font-medium text-sm" htmlFor="title">
                         Title

@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import { ChapterList } from "@/components/chapter-list"
 import { StatusBar } from "@/components/status-bar"
 import TiptapEditor from "@/components/tiptap-editor"
 import { Button } from "@/components/ui/button"
-import { api } from "@/lib/api"
+import { ApiError, api } from "@/lib/api"
 import { type SaveState, saveStatusText } from "@/lib/save-status"
 import { countWordsInHtml } from "@/lib/word-count"
 
@@ -46,6 +47,11 @@ function WriteInterface() {
       return await api.chapters.getContent(projectId, selectedChapterId)
     },
     enabled: Boolean(selectedChapterId),
+    // The editor is keyed on `doc.updatedAt`; only refetch when we explicitly
+    // invalidate (chapter switch or conflict reload) so a background refetch
+    // never remounts the editor and drops in-progress edits.
+    refetchOnWindowFocus: false,
+    staleTime: Number.POSITIVE_INFINITY,
   })
 
   const [wordCount, setWordCount] = useState(0)
@@ -54,6 +60,12 @@ function WriteInterface() {
 
   const pendingRef = useRef({ chapterId: "", content: "", dirty: false })
   const timerRef = useRef(0)
+  // The `updatedAt` token last seen from the server; echoed back on save so the
+  // server can reject a write that would clobber an edit made elsewhere.
+  const baseUpdatedAtRef = useRef<string | null>(null)
+  // While true, the chapter changed under us — stop autosaving until the writer
+  // reloads, so we never overwrite the newer version.
+  const conflictRef = useRef(false)
 
   // Seed word count and last-saved time from the loaded chapter
   useEffect(() => {
@@ -61,19 +73,49 @@ function WriteInterface() {
       setWordCount(doc.wordCount)
       setSavedAt(doc.updatedAt)
       setSaveState("idle")
+      baseUpdatedAtRef.current = doc.updatedAt
+      conflictRef.current = false
     }
   }, [doc])
 
+  // Discard local edits and pull the latest server version of the chapter.
+  const reloadChapter = useCallback(() => {
+    conflictRef.current = false
+    pendingRef.current.dirty = false
+    window.clearTimeout(timerRef.current)
+    toast.dismiss()
+    queryClient.invalidateQueries({
+      queryKey: ["chapter-content", projectId, selectedChapterId],
+    })
+  }, [projectId, selectedChapterId, queryClient])
+
   const { mutate: saveContent } = useMutation({
     mutationFn: async ({ chapterId, content }: { chapterId: string; content: string }) =>
-      await api.chapters.saveContent(projectId, chapterId, content),
+      await api.chapters.saveContent(
+        projectId,
+        chapterId,
+        content,
+        baseUpdatedAtRef.current ?? undefined
+      ),
     onSuccess: (result) => {
+      baseUpdatedAtRef.current = result.savedAt
       setSavedAt(result.savedAt)
       setSaveState(pendingRef.current.dirty ? "dirty" : "saved")
       queryClient.invalidateQueries({ queryKey: ["chapters", projectId] })
       queryClient.invalidateQueries({ queryKey: ["project", projectId] })
     },
-    onError: () => {
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === "stale_content") {
+        conflictRef.current = true
+        pendingRef.current.dirty = false
+        setSaveState("conflict")
+        toast.error("This chapter was edited elsewhere.", {
+          description: "Reload to get the latest version. Unsaved changes here will be lost.",
+          action: { label: "Reload", onClick: reloadChapter },
+          duration: Number.POSITIVE_INFINITY,
+        })
+        return
+      }
       pendingRef.current.dirty = true
       setSaveState("error")
     },
@@ -84,8 +126,13 @@ function WriteInterface() {
       if (!selectedChapterId) {
         return
       }
-      pendingRef.current = { chapterId: selectedChapterId, content, dirty: true }
       setWordCount(countWordsInHtml(content))
+      // A reload is required to resolve a conflict; don't keep retrying saves
+      // that would just be rejected (or clobber the newer version).
+      if (conflictRef.current) {
+        return
+      }
+      pendingRef.current = { chapterId: selectedChapterId, content, dirty: true }
       setSaveState("dirty")
       window.clearTimeout(timerRef.current)
       timerRef.current = window.setTimeout(() => {
@@ -105,10 +152,15 @@ function WriteInterface() {
   useEffect(
     () => () => {
       window.clearTimeout(timerRef.current)
-      if (pendingRef.current.dirty && pendingRef.current.chapterId) {
+      if (!conflictRef.current && pendingRef.current.dirty && pendingRef.current.chapterId) {
         pendingRef.current.dirty = false
         api.chapters
-          .saveContent(projectId, pendingRef.current.chapterId, pendingRef.current.content)
+          .saveContent(
+            projectId,
+            pendingRef.current.chapterId,
+            pendingRef.current.content,
+            baseUpdatedAtRef.current ?? undefined
+          )
           .catch((error) => {
             console.error("Failed to save draft on exit:", error)
           })
@@ -124,6 +176,19 @@ function WriteInterface() {
       setSelectedChapterId(result.id)
     },
   })
+  const { mutate: createFirstChapterMutate } = createFirstChapter
+
+  // A brand-new project has no chapters; create Chapter 1 automatically so the
+  // writer lands in an editor, not in front of another button. The ref makes
+  // this a single attempt — on failure the manual button below takes over.
+  const autoCreateAttemptedRef = useRef(false)
+  useEffect(() => {
+    if (chaptersLoading || chapters.length > 0 || autoCreateAttemptedRef.current) {
+      return
+    }
+    autoCreateAttemptedRef.current = true
+    createFirstChapterMutate()
+  }, [chaptersLoading, chapters.length, createFirstChapterMutate])
 
   if (chaptersLoading) {
     return (
@@ -145,14 +210,20 @@ function WriteInterface() {
       <div className="flex min-w-0 flex-1 flex-col">
         {chapters.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-            <p className="text-muted-foreground">Every novel starts with a first chapter.</p>
-            <Button
-              disabled={createFirstChapter.isPending}
-              onClick={() => createFirstChapter.mutate()}
-              type="button"
-            >
-              Create Chapter 1
-            </Button>
+            {createFirstChapter.isError ? (
+              <>
+                <p className="text-muted-foreground">Every novel starts with a first chapter.</p>
+                <Button
+                  disabled={createFirstChapter.isPending}
+                  onClick={() => createFirstChapter.mutate()}
+                  type="button"
+                >
+                  Create Chapter 1
+                </Button>
+              </>
+            ) : (
+              <p className="animate-pulse text-muted-foreground">Preparing your first chapter…</p>
+            )}
           </div>
         )}
 
@@ -166,7 +237,7 @@ function WriteInterface() {
               ) : (
                 <TiptapEditor
                   content={doc.content}
-                  key={selectedChapterId}
+                  key={`${selectedChapterId}:${doc.updatedAt}`}
                   onUpdate={handleEditorUpdate}
                   placeholder="Begin your story... Ask the AI assistant for help with characters, plot, or writing style."
                 />

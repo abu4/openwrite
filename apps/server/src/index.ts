@@ -4,6 +4,7 @@ import { logger } from "hono/logger"
 import { getAuth } from "./lib/auth"
 import { openApiApp } from "./lib/openapi"
 import { apiRouter } from "./routers"
+import { runScheduledJobs } from "./scheduled"
 // Import route definitions to register them
 import "./routes/health"
 import "./routes/user"
@@ -137,4 +138,9 @@ app.get("*", async (c) => {
   }
 })
 
-export default app
+export default {
+  fetch: app.fetch,
+  scheduled(controller: ScheduledController, _env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(runScheduledJobs(new Date(controller.scheduledTime)))
+  },
+}
