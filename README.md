@@ -6,14 +6,21 @@ OpenWrite helps you plan, organize, and write long-form fiction — with an AI a
 
 **Try it:** [openwrite.iliareingold.com](https://openwrite.iliareingold.com)
 
+![One sentence becomes a connected story map: a premise node expands into acts, acts into chapters, and a chapter is promoted straight into the manuscript](.github/story-map-demo.gif)
+
+*One sentence in → a connected story map out. Expand any node with AI, then promote chapters straight into your manuscript.*
+
 ## What works today
 
+- 🗺️ **Story map (node-based AI generation)** — describe your story in one sentence, then expand it level by level: premise → acts → chapters → scenes, each generated as connected nodes on a visual canvas with auto-layout. Chapter nodes promote directly into your manuscript
 - ✍️ **Rich text editor with auto-save** — a distraction-light Tiptap editor that persists your manuscript as you type, with live word counts and per-project progress tracking
+- 📖 **Chapter management** — create, rename, reorder, and write per-chapter, with safe concurrent-edit detection
 - 🤖 **AI writing assistant (bring your own key)** — chat with an assistant that knows your project's title, genre, and characters, then insert its suggestions straight into your manuscript. Supported providers:
   - OpenRouter (one key, hundreds of models — easiest start)
   - OpenAI, Anthropic, Groq, Gemini, Cohere
   - Ollama (fully local models, fully private)
 - 📚 **Codex** — structured world-building: characters, locations, lore entries, and plot points, organized per project
+- 📤 **Markdown export** — download your full manuscript as Markdown
 - 🗂️ **Projects** — novels, trilogies, series, short story collections, screenplays; genre, status, and target word count tracking
 - 🔐 **Auth & workspaces** — email/password accounts with personal workspaces; API keys are encrypted at rest (AES-GCM)
 
@@ -21,10 +28,9 @@ OpenWrite helps you plan, organize, and write long-form fiction — with an AI a
 
 | Feature | Status |
 | --- | --- |
-| Chapter & scene management | Planned next |
 | Streaming AI responses | Planned next |
-| Manuscript export (Markdown / DOCX / EPUB) | Planned |
-| Story canvas (visual plotting) | Experimental |
+| Character auto-linking in story-map expansion | Planned next |
+| Manuscript export (DOCX / EPUB) | Planned |
 | Real-time collaboration | Designed, not built |
 
 Found a bug or want to influence what gets built? [Open an issue](https://github.com/ilrein/openwrite/issues).

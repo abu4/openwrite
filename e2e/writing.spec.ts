@@ -24,22 +24,17 @@ async function createProjectViaDialog(page: Page, title: string): Promise<string
     .click()
   await page.getByLabel(/title/i).fill(title)
   await page.getByRole("button", { name: "Create Project", exact: true }).click()
-  await expect(page.getByText(title).first()).toBeVisible({ timeout: 15_000 })
 
-  // Resolve the created project's id through the API the page is already authenticated against
-  const projectId = await page.evaluate(async (projectTitle) => {
-    const response = await fetch("/api/projects", { credentials: "include" })
-    const data = (await response.json()) as { projects: { id: string; title: string }[] }
-    return data.projects.find((p) => p.title === projectTitle)?.id ?? ""
-  }, title)
-
+  // Creating a project drops the writer straight into the editor
+  await page.waitForURL("**/projects/*/write", { timeout: 15_000 })
+  const projectId = /\/projects\/([^/]+)\/write/.exec(page.url())?.[1] ?? ""
   expect(projectId).not.toBe("")
   return projectId
 }
 
 async function openEditorWithFirstChapter(page: Page, projectId: string): Promise<void> {
   await page.goto(`/projects/${projectId}/write`)
-  await page.getByRole("button", { name: /create chapter 1/i }).click()
+  // Chapter 1 is created automatically on first visit
   await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 15_000 })
 }
 
@@ -67,6 +62,25 @@ test("writer journey: sign up, create a project, write with autosave", async ({ 
 
   // Chapter sidebar shows the chapter with its word count
   await expect(page.getByText("Chapter 1").first()).toBeVisible()
+})
+
+test("canvas: premise capture seeds the story map", async ({ page, isMobile }) => {
+  test.skip(isMobile, "desktop-only flow")
+
+  await signUp(page, "canvas")
+  const projectId = await createProjectViaDialog(page, `E2E Canvas ${Date.now()}`)
+
+  await page.goto(`/projects/${projectId}/canvas`)
+  await expect(page.getByText("Start your story map")).toBeVisible({ timeout: 15_000 })
+
+  await page
+    .getByPlaceholder(/lighthouse keeper/i)
+    .fill("A cartographer maps a city that rearranges itself at night.")
+  await page.getByRole("button", { name: /create premise/i }).click()
+
+  // The premise lands on the canvas as a node and the capture card goes away
+  await expect(page.getByText("Premise").first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText("Start your story map")).not.toBeVisible()
 })
 
 test("mobile: toolbar stays on a single scrollable row above the editor", async ({
