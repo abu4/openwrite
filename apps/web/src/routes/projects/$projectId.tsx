@@ -113,7 +113,12 @@ function WriteLayout() {
             {/* AI Assistant Toggle */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={toggleSidebar} size="sm" variant="outline">
+                <Button
+                  data-tour="ai-assistant"
+                  onClick={toggleSidebar}
+                  size="sm"
+                  variant="outline"
+                >
                   <Sparkles className="h-4 w-4" />
                   <span className="sr-only">Toggle AI Assistant</span>
                 </Button>

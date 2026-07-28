@@ -10,7 +10,13 @@ vi.mock("../db", async () => {
 
 import { chapter, organization, project, user, work } from "../db/schema"
 import { applyMigrations, testDb } from "../test/test-db"
-import { findReengagementCandidates, markReengagementSent } from "./reengagement"
+import {
+  DRAFT_NUDGE_EMAIL_TYPE,
+  findDraftNudgeCandidates,
+  findReengagementCandidates,
+  markEmailSent,
+  REENGAGEMENT_EMAIL_TYPE,
+} from "./reengagement"
 
 const NOW = new Date("2026-07-20T15:00:00.000Z")
 const ORG_ID = "reng-org"
@@ -31,7 +37,11 @@ async function seedUser(id: string, opts: { emailVerified: boolean; signedUpDays
   })
 }
 
-async function seedProjectWithChapter(ownerId: string, wordCount: number) {
+async function seedProjectWithChapter(
+  ownerId: string,
+  wordCount: number,
+  lastWrittenAt: Date | null = null
+) {
   const projectId = `${ownerId}-project`
   const workId = `${ownerId}-work`
   await testDb.insert(project).values({
@@ -44,6 +54,7 @@ async function seedProjectWithChapter(ownerId: string, wordCount: number) {
     organizationId: ORG_ID,
     createdAt: NOW,
     updatedAt: NOW,
+    lastWrittenAt,
   })
   await testDb.insert(work).values({
     id: workId,
@@ -94,6 +105,14 @@ beforeAll(async () => {
   await seedUser("fresh", { emailVerified: true, signedUpDaysAgo: 1 })
   await seedUser("ancient", { emailVerified: true, signedUpDaysAgo: 45 })
   await seedUser("unverified", { emailVerified: false, signedUpDaysAgo: 5 })
+
+  // Draft-nudge cohort: wrote words, last writing activity at various ages
+  await seedUser("idle-writer", { emailVerified: true, signedUpDaysAgo: 15 })
+  await seedProjectWithChapter("idle-writer", 500, daysAgo(5))
+  await seedUser("active-writer", { emailVerified: true, signedUpDaysAgo: 15 })
+  await seedProjectWithChapter("active-writer", 800, daysAgo(1))
+  await seedUser("long-gone-writer", { emailVerified: true, signedUpDaysAgo: 60 })
+  await seedProjectWithChapter("long-gone-writer", 300, daysAgo(30))
 })
 
 describe("findReengagementCandidates", () => {
@@ -103,9 +122,28 @@ describe("findReengagementCandidates", () => {
   })
 
   it("never selects a user twice once the nudge is recorded", async () => {
-    await markReengagementSent("eligible", NOW)
+    await markEmailSent("eligible", REENGAGEMENT_EMAIL_TYPE, NOW)
 
     const candidates = await findReengagementCandidates(NOW)
     expect(candidates.map((c) => c.id)).toEqual(["eligible-no-project"])
+  })
+})
+
+describe("findDraftNudgeCandidates", () => {
+  it("selects only writers idle 3-21 days, with their word totals", async () => {
+    const candidates = await findDraftNudgeCandidates(NOW)
+    expect(candidates).toEqual([
+      { id: "idle-writer", email: "idle-writer@example.com", name: "idle-writer", totalWords: 500 },
+    ])
+  })
+
+  it("respects the per-type sent log independently of the signup nudge", async () => {
+    // The signup-nudge record must not block the draft nudge…
+    await markEmailSent("idle-writer", REENGAGEMENT_EMAIL_TYPE, NOW)
+    expect((await findDraftNudgeCandidates(NOW)).map((c) => c.id)).toEqual(["idle-writer"])
+
+    // …but its own record does
+    await markEmailSent("idle-writer", DRAFT_NUDGE_EMAIL_TYPE, NOW)
+    expect(await findDraftNudgeCandidates(NOW)).toEqual([])
   })
 })

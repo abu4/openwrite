@@ -90,7 +90,7 @@ export function ChapterList({
   }
 
   return (
-    <div className="flex h-full w-60 flex-col border-r bg-muted/20">
+    <div className="flex h-full w-60 flex-col border-r bg-muted/20" data-tour="chapters">
       <div className="flex items-center justify-between border-b p-3">
         <span className="font-medium text-sm">Chapters</span>
         <Button
@@ -207,7 +207,7 @@ export function ChapterList({
         ))}
       </div>
 
-      <div className="border-t p-2">
+      <div className="border-t p-2" data-tour="story-map">
         <Button
           asChild
           className="w-full justify-start text-muted-foreground"

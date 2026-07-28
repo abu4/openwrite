@@ -1,13 +1,16 @@
+import { HelpCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AutocompleteToggle } from "@/components/autocomplete-toggle"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 interface StatusBarProps {
   lastSavedText: string
+  onShowGuide?: () => void
   wordCount: number
 }
 
-export function StatusBar({ wordCount, lastSavedText }: StatusBarProps) {
+export function StatusBar({ wordCount, lastSavedText, onShowGuide }: StatusBarProps) {
   const [currentTime, setCurrentTime] = useState(() =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   )
@@ -33,6 +36,18 @@ export function StatusBar({ wordCount, lastSavedText }: StatusBarProps) {
           <span>{currentTime}</span>
           <div className="h-4 w-px bg-border" />
           <AutocompleteToggle />
+          {onShowGuide && (
+            <Button
+              className="h-6 w-6 p-0"
+              onClick={onShowGuide}
+              size="sm"
+              title="Show guide"
+              type="button"
+              variant="ghost"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </footer>
