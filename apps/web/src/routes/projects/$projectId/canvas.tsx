@@ -39,9 +39,18 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { GuidedTour, type TourStep, useTour } from "@/components/guided-tour"
 import { NodeWritingPanel } from "@/components/node-writing-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -82,6 +91,26 @@ type StoryElementType = "premise" | "act" | "chapter" | "scene" | "beat" | "plot
 
 // Subtypes the expand endpoint can decompose one level down
 const EXPANDABLE_SUBTYPES = new Set(["premise", "act", "chapter", "scene"])
+
+// Steps whose targets are absent (e.g. no expand buttons on an empty canvas)
+// are skipped automatically by GuidedTour
+const CANVAS_TOUR_STEPS: TourStep[] = [
+  {
+    target: '[data-tour="premise-card"]',
+    title: "Start with a premise",
+    body: "One sentence is enough — it becomes the root node of your story map, ready to expand.",
+  },
+  {
+    target: '[title="Expand with AI"]',
+    title: "Expand any element",
+    body: "The sparkle button breaks an element into the next level — premise into acts, acts into chapters, chapters into scenes. Add optional guidance to steer it.",
+  },
+  {
+    target: '[data-tour="canvas-elements"]',
+    title: "Add elements by hand",
+    body: "Acts, scenes, beats, characters, locations, and lore — drop them anywhere and connect them by dragging between node handles.",
+  },
+]
 
 // Enhanced story node data interface matching our graph system
 interface StoryNodeData extends Record<string, unknown> {
@@ -158,7 +187,7 @@ const nodeConfigs = {
 function StoryNode(
   props: NodeProps<StoryNode> & {
     onEdit?: (node: StoryNode) => void
-    onExpand?: (graphNodeId: string) => void
+    onExpand?: (graphNodeId: string, label: string) => void
   }
 ) {
   const { data, selected, id, onEdit, onExpand } = props
@@ -182,7 +211,7 @@ function StoryNode(
   const handleExpand = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (onExpand && data.graphNodeId) {
-      onExpand(data.graphNodeId)
+      onExpand(data.graphNodeId, data.label)
     }
   }
 
@@ -303,6 +332,7 @@ function StoryCanvas() {
   const { projectId } = Route.useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const tour = useTour("openwrite-tour-canvas-v1")
 
   // Load graph data from API
   const { data: graphNodes = [], isLoading: nodesLoading } = useQuery({
@@ -528,7 +558,13 @@ function StoryCanvas() {
   const expandingRef = React.useRef(false)
 
   const expandNodeMutation = useMutation({
-    mutationFn: async (graphNodeId: string) => await api.graph.expandNode(projectId, graphNodeId),
+    mutationFn: async ({
+      graphNodeId,
+      instructions,
+    }: {
+      graphNodeId: string
+      instructions?: string
+    }) => await api.graph.expandNode(projectId, graphNodeId, { instructions }),
     onMutate: () => {
       expandingRef.current = true
       expandToastRef.current = toast.loading("Expanding story element…")
@@ -564,16 +600,28 @@ function StoryCanvas() {
   })
   const { mutate: expandNode } = expandNodeMutation
 
-  const handleNodeExpand = useCallback(
-    (graphNodeId: string) => {
-      if (expandingRef.current) {
-        toast.info("An expansion is already running…")
-        return
-      }
-      expandNode(graphNodeId)
-    },
-    [expandNode]
-  )
+  // ✨ opens a small dialog so the writer can steer the expansion (optional
+  // guidance passes through as `instructions` to the expand endpoint)
+  const [expandTarget, setExpandTarget] = useState<{ id: string; label: string } | null>(null)
+  const [expandGuidance, setExpandGuidance] = useState("")
+
+  const handleNodeExpand = useCallback((graphNodeId: string, label: string) => {
+    if (expandingRef.current) {
+      toast.info("An expansion is already running…")
+      return
+    }
+    setExpandTarget({ id: graphNodeId, label })
+  }, [])
+
+  const confirmExpand = useCallback(() => {
+    if (!expandTarget) {
+      return
+    }
+    const instructions = expandGuidance.trim()
+    expandNode({ graphNodeId: expandTarget.id, instructions: instructions || undefined })
+    setExpandTarget(null)
+    setExpandGuidance("")
+  }, [expandTarget, expandGuidance, expandNode])
 
   // ---------------------------------------------------------------------
   // Promote a chapter node into a real manuscript chapter
@@ -964,7 +1012,7 @@ function StoryCanvas() {
       {/* Menubar */}
       <Menubar className="rounded-none border-b">
         <MenubarMenu>
-          <MenubarTrigger>Elements</MenubarTrigger>
+          <MenubarTrigger data-tour="canvas-elements">Elements</MenubarTrigger>
           <MenubarContent>
             <MenubarItem onClick={() => createGraphNode("story_element", "act")}>
               <Layers className="mr-2 h-4 w-4" />
@@ -1027,6 +1075,11 @@ function StoryCanvas() {
               <Network className="mr-2 h-4 w-4" />
               Auto-layout
             </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onClick={tour.start}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Show guide
+            </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
 
@@ -1083,7 +1136,10 @@ function StoryCanvas() {
           {/* First-run premise capture: seed the story map from one idea */}
           {!nodesLoading && graphNodes.length === 0 && (
             <Panel className="w-[420px] max-w-[90vw]" position="top-center">
-              <div className="mt-16 space-y-4 rounded-xl border bg-background/95 p-6 shadow-lg backdrop-blur-sm">
+              <div
+                className="mt-16 space-y-4 rounded-xl border bg-background/95 p-6 shadow-lg backdrop-blur-sm"
+                data-tour="premise-card"
+              >
                 <div className="flex items-center gap-2">
                   <div className="rounded-lg bg-indigo-500 p-2 text-white">
                     <Sparkles className="h-4 w-4" />
@@ -1132,6 +1188,63 @@ function StoryCanvas() {
           </Panel>
         </ReactFlow>
       </div>
+
+      {/* First-visit walkthrough; replayable via View → Show guide */}
+      <GuidedTour
+        onFinish={tour.finish}
+        open={tour.open && !nodesLoading}
+        steps={CANVAS_TOUR_STEPS}
+      />
+
+      {/* Expansion guidance dialog */}
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setExpandTarget(null)
+          }
+        }}
+        open={Boolean(expandTarget)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Expand “{expandTarget?.label}”
+            </DialogTitle>
+            <DialogDescription>
+              AI breaks this element into the next level of your story, connected on the canvas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="font-medium text-sm" htmlFor="expand-guidance">
+              Guidance <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              className="min-h-[72px] resize-none"
+              id="expand-guidance"
+              onChange={(e) => setExpandGuidance(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  confirmExpand()
+                }
+              }}
+              placeholder="Steer the expansion — e.g. “darker tone, five chapters, end on a betrayal”"
+              rows={3}
+              value={expandGuidance}
+            />
+            <p className="text-muted-foreground text-xs">
+              Press Enter to expand, Shift+Enter for a new line.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={confirmExpand} type="button">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Expand
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Detail Pane */}
       <Sheet onOpenChange={setIsDetailPaneOpen} open={isDetailPaneOpen}>

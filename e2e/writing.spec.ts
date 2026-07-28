@@ -36,6 +36,10 @@ async function openEditorWithFirstChapter(page: Page, projectId: string): Promis
   await page.goto(`/projects/${projectId}/write`)
   // Chapter 1 is created automatically on first visit
   await expect(page.locator(".ProseMirror")).toBeVisible({ timeout: 15_000 })
+  // The first visit opens the guided tour; dismiss it
+  await expect(page.getByText("Your manuscript")).toBeVisible({ timeout: 10_000 })
+  await page.getByRole("button", { name: "Skip" }).click()
+  await expect(page.getByText("Your manuscript")).not.toBeVisible()
 }
 
 test("writer journey: sign up, create a project, write with autosave", async ({ page }) => {
@@ -72,6 +76,10 @@ test("canvas: premise capture seeds the story map", async ({ page, isMobile }) =
 
   await page.goto(`/projects/${projectId}/canvas`)
   await expect(page.getByText("Start your story map")).toBeVisible({ timeout: 15_000 })
+
+  // First canvas visit opens the guided tour; dismiss it
+  await expect(page.getByText("Start with a premise")).toBeVisible({ timeout: 10_000 })
+  await page.getByRole("button", { name: "Skip" }).click()
 
   await page
     .getByPlaceholder(/lighthouse keeper/i)

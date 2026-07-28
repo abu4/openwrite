@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { ChapterList } from "@/components/chapter-list"
+import { GuidedTour, type TourStep, useTour } from "@/components/guided-tour"
 import { StatusBar } from "@/components/status-bar"
 import TiptapEditor from "@/components/tiptap-editor"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,29 @@ import { countWordsInHtml } from "@/lib/word-count"
 
 const AUTOSAVE_DELAY_MS = 1500
 
+const WRITE_TOUR_STEPS: TourStep[] = [
+  {
+    target: '[data-tour="editor"]',
+    title: "Your manuscript",
+    body: "Write here — everything saves automatically as you type. Formatting lives in the toolbar above.",
+  },
+  {
+    target: '[data-tour="chapters"]',
+    title: "Chapters",
+    body: "Create, rename, and reorder chapters. Word counts update live as you write.",
+  },
+  {
+    target: '[data-tour="ai-assistant"]',
+    title: "AI assistant",
+    body: "Chat with an assistant that knows your project and characters, then insert its suggestions straight into the manuscript. Toggle it with ⌘J.",
+  },
+  {
+    target: '[data-tour="story-map"]',
+    title: "Map your story",
+    body: "Plan visually: describe your story in one sentence and expand it into acts, chapters, and scenes with AI — then promote chapters back into the manuscript.",
+  },
+]
+
 export const Route = createFileRoute("/projects/$projectId/write")({
   component: WriteInterface,
 })
@@ -19,6 +43,7 @@ export const Route = createFileRoute("/projects/$projectId/write")({
 function WriteInterface() {
   const { projectId } = Route.useParams()
   const queryClient = useQueryClient()
+  const tour = useTour("openwrite-tour-write-v1")
 
   const { data: chapters = [], isLoading: chaptersLoading } = useQuery({
     queryKey: ["chapters", projectId],
@@ -229,7 +254,7 @@ function WriteInterface() {
 
         {chapters.length > 0 && selectedChapterId && (
           <>
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto" data-tour="editor">
               {contentLoading || !doc ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="animate-pulse text-muted-foreground">Loading chapter…</div>
@@ -243,10 +268,22 @@ function WriteInterface() {
                 />
               )}
             </div>
-            <StatusBar lastSavedText={saveStatusText(saveState, savedAt)} wordCount={wordCount} />
+            <StatusBar
+              lastSavedText={saveStatusText(saveState, savedAt)}
+              onShowGuide={tour.start}
+              wordCount={wordCount}
+            />
           </>
         )}
       </div>
+
+      {/* First-visit walkthrough; replayable via the ? in the status bar.
+          Gated on a loaded editor so targets exist before the tour opens. */}
+      <GuidedTour
+        onFinish={tour.finish}
+        open={tour.open && chapters.length > 0 && Boolean(doc)}
+        steps={WRITE_TOUR_STEPS}
+      />
     </div>
   )
 }
