@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { check, integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import { user } from "./auth"
 import { organization } from "./organization"
 
@@ -51,85 +51,104 @@ export const loreTypeEnum = [
 export const collaboratorRoleEnum = ["editor", "co_author", "reviewer", "viewer"] as const
 
 // Project table - the main creative project container
-export const project = sqliteTable("project", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description"),
-  type: text("type", { enum: projectTypeEnum }).notNull().default("novel"),
-  genre: text("genre"), // Fantasy, Science Fiction, Romance, etc.
-  targetWordCount: integer("target_word_count"),
-  currentWordCount: integer("current_word_count").default(0),
-  status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
-  visibility: text("visibility", { enum: visibilityEnum }).notNull().default("private"),
+export const project = sqliteTable(
+  "project",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    type: text("type", { enum: projectTypeEnum }).notNull().default("novel"),
+    genre: text("genre"), // Fantasy, Science Fiction, Romance, etc.
+    targetWordCount: integer("target_word_count"),
+    currentWordCount: integer("current_word_count").default(0),
+    status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
+    visibility: text("visibility", { enum: visibilityEnum }).notNull().default("private"),
 
-  // Ownership and organization
-  ownerId: text("owner_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
+    // Ownership and organization
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
 
-  // Cover and metadata
-  coverImage: text("cover_image"),
-  metadata: text("metadata"), // JSON for additional project data (themes, inspiration, series info, etc.)
+    // Cover and metadata
+    coverImage: text("cover_image"),
+    metadata: text("metadata"), // JSON for additional project data (themes, inspiration, series info, etc.)
 
-  // Timestamps
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 
-  // Publishing info
-  publishedAt: integer("published_at", { mode: "timestamp" }),
-  lastWrittenAt: integer("last_written_at", { mode: "timestamp" }),
-})
+    // Publishing info
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    lastWrittenAt: integer("last_written_at", { mode: "timestamp" }),
+  },
+  (table) => ({
+    ownerIdIdx: index("project_owner_id_idx").on(table.ownerId),
+    organizationIdIdx: index("project_organization_id_idx").on(table.organizationId),
+  })
+)
 
 // Work table - individual novels/stories within a project
-export const work = sqliteTable("work", {
-  id: text("id").primaryKey(),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => project.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  workType: text("work_type", { enum: workTypeEnum }).notNull(),
-  order: integer("order").notNull().default(1), // For trilogies/series ordering
-  targetWordCount: integer("target_word_count"),
-  currentWordCount: integer("current_word_count").default(0),
-  status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
+export const work = sqliteTable(
+  "work",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    workType: text("work_type", { enum: workTypeEnum }).notNull(),
+    order: integer("order").notNull().default(1), // For trilogies/series ordering
+    targetWordCount: integer("target_word_count"),
+    currentWordCount: integer("current_word_count").default(0),
+    status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
 
-  // Cover and metadata specific to this work
-  coverImage: text("cover_image"),
-  metadata: text("metadata"), // JSON for work-specific data
+    // Cover and metadata specific to this work
+    coverImage: text("cover_image"),
+    metadata: text("metadata"), // JSON for work-specific data
 
-  // Timestamps
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-  publishedAt: integer("published_at", { mode: "timestamp" }),
-  lastWrittenAt: integer("last_written_at", { mode: "timestamp" }),
-})
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    lastWrittenAt: integer("last_written_at", { mode: "timestamp" }),
+  },
+  (table) => ({
+    projectIdIdx: index("work_project_id_idx").on(table.projectId),
+  })
+)
 
 // Chapter table - organizing work content
-export const chapter = sqliteTable("chapter", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content"), // Markdown/rich text content
-  summary: text("summary"), // Brief chapter summary
-  wordCount: integer("word_count").default(0),
-  order: integer("order").notNull(), // Chapter order within the work
-  status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
+export const chapter = sqliteTable(
+  "chapter",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    content: text("content"), // Markdown/rich text content
+    summary: text("summary"), // Brief chapter summary
+    wordCount: integer("word_count").default(0),
+    order: integer("order").notNull(), // Chapter order within the work
+    status: text("status", { enum: projectStatusEnum }).notNull().default("draft"),
 
-  // Relationships
-  workId: text("work_id")
-    .notNull()
-    .references(() => work.id, { onDelete: "cascade" }),
+    // Relationships
+    workId: text("work_id")
+      .notNull()
+      .references(() => work.id, { onDelete: "cascade" }),
 
-  // Metadata
-  notes: text("notes"), // Author notes for this chapter
+    // Metadata
+    notes: text("notes"), // Author notes for this chapter
 
-  // Timestamps
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-})
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    workIdIdx: index("chapter_work_id_idx").on(table.workId),
+  })
+)
 
 // Character table - character management for projects and works
 export const character = sqliteTable(
@@ -156,12 +175,14 @@ export const character = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
-  (_table) => ({
+  (table) => ({
     // CHECK constraint to ensure character is associated with either project or work (mutually exclusive)
     characterAssociation: check(
       "character_association",
       sql`(project_id IS NULL) IS NOT (work_id IS NULL)`
     ),
+    projectIdIdx: index("character_project_id_idx").on(table.projectId),
+    workIdIdx: index("character_work_id_idx").on(table.workId),
   })
 )
 
@@ -189,12 +210,14 @@ export const location = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
-  (_table) => ({
+  (table) => ({
     // CHECK constraint to ensure location is associated with either project or work (mutually exclusive)
     locationAssociation: check(
       "location_association",
       sql`(project_id IS NULL) IS NOT (work_id IS NULL)`
     ),
+    projectIdIdx: index("location_project_id_idx").on(table.projectId),
+    workIdIdx: index("location_work_id_idx").on(table.workId),
   })
 )
 
@@ -220,12 +243,14 @@ export const plotPoint = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
-  (_table) => ({
+  (table) => ({
     // CHECK constraint to ensure plot point is associated with either project or work (mutually exclusive)
     plotPointAssociation: check(
       "plot_point_association",
       sql`(project_id IS NULL) IS NOT (work_id IS NULL)`
     ),
+    projectIdIdx: index("plot_point_project_id_idx").on(table.projectId),
+    workIdIdx: index("plot_point_work_id_idx").on(table.workId),
   })
 )
 
@@ -249,52 +274,68 @@ export const lore = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },
-  (_table) => ({
+  (table) => ({
     // CHECK constraint to ensure lore is associated with either project or work (mutually exclusive)
     loreAssociation: check("lore_association", sql`(project_id IS NULL) IS NOT (work_id IS NULL)`),
+    projectIdIdx: index("lore_project_id_idx").on(table.projectId),
+    workIdIdx: index("lore_work_id_idx").on(table.workId),
   })
 )
 
 // Project collaborator table - manage who can work on a project
-export const projectCollaborator = sqliteTable("project_collaborator", {
-  id: text("id").primaryKey(),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => project.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  role: text("role", { enum: collaboratorRoleEnum }).notNull(),
-  permissions: text("permissions"), // JSON array of specific permissions
+export const projectCollaborator = sqliteTable(
+  "project_collaborator",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role", { enum: collaboratorRoleEnum }).notNull(),
+    permissions: text("permissions"), // JSON array of specific permissions
 
-  // Timestamps
-  invitedAt: integer("invited_at", { mode: "timestamp" }).notNull(),
-  acceptedAt: integer("accepted_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-})
+    // Timestamps
+    invitedAt: integer("invited_at", { mode: "timestamp" }).notNull(),
+    acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("project_collaborator_project_id_idx").on(table.projectId),
+    userIdIdx: index("project_collaborator_user_id_idx").on(table.userId),
+  })
+)
 
 // Writing session table - track writing progress and analytics
-export const writingSession = sqliteTable("writing_session", {
-  id: text("id").primaryKey(),
-  projectId: text("project_id")
-    .notNull()
-    .references(() => project.id, { onDelete: "cascade" }),
-  workId: text("work_id").references(() => work.id, { onDelete: "set null" }), // Optional: which work was worked on
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  chapterId: text("chapter_id").references(() => chapter.id, { onDelete: "set null" }), // Optional: which chapter was worked on
+export const writingSession = sqliteTable(
+  "writing_session",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    workId: text("work_id").references(() => work.id, { onDelete: "set null" }), // Optional: which work was worked on
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    chapterId: text("chapter_id").references(() => chapter.id, { onDelete: "set null" }), // Optional: which chapter was worked on
 
-  // Session data
-  wordsWritten: integer("words_written").default(0),
-  timeSpent: integer("time_spent").default(0), // in minutes
-  startTime: integer("start_time", { mode: "timestamp" }).notNull(),
-  endTime: integer("end_time", { mode: "timestamp" }),
+    // Session data
+    wordsWritten: integer("words_written").default(0),
+    timeSpent: integer("time_spent").default(0), // in minutes
+    startTime: integer("start_time", { mode: "timestamp" }).notNull(),
+    endTime: integer("end_time", { mode: "timestamp" }),
 
-  // Goal tracking
-  goalWords: integer("goal_words"), // Words goal for this session
-  goalAchieved: integer("goal_achieved", { mode: "boolean" }).default(false),
+    // Goal tracking
+    goalWords: integer("goal_words"), // Words goal for this session
+    goalAchieved: integer("goal_achieved", { mode: "boolean" }).default(false),
 
-  // Timestamps
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-})
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("writing_session_project_id_idx").on(table.projectId),
+    userIdIdx: index("writing_session_user_id_idx").on(table.userId),
+  })
+)
