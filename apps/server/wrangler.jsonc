@@ -4,7 +4,7 @@
   "compatibility_date": "2025-06-15",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
-    { "pattern": "openwrite.iliareingold.com", "custom_domain": true }
+    { "pattern": "zturn.cn/*", "custom_domain": true }
   ],
   // Keep the legacy workers.dev URL serving existing users' bookmarks
   "workers_dev": true,
