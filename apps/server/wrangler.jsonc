@@ -4,7 +4,7 @@
   "compatibility_date": "2025-06-15",
   "compatibility_flags": ["nodejs_compat"],
   "routes": [
-    { "pattern": "zturn.cn/*", "custom_domain": true }
+    { "pattern": "zturn.cn/*", "zone_name": "zturn.cn" }
   ],
   // Keep the legacy workers.dev URL serving existing users' bookmarks
   "workers_dev": true,
