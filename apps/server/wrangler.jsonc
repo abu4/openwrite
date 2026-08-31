@@ -38,7 +38,7 @@
     {
       "binding": "DB",
       "database_name": "openwrite-us-east-1",
-      "database_id": "9c50826a-1e7a-498c-ab1b-d1a73192cca9",
+      "database_id": "d00f40e1-89f7-440c-a9a1-d2257fb798ca",
       "preview_database_id": "local-test-db",
       "migrations_dir": "./src/db/migrations"
     }
